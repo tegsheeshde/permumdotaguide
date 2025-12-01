@@ -123,8 +123,21 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen relative p-4 sm:p-6 lg:p-8">
+      {/* Background Image with Overlay */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: `url(${import.meta.env.BASE_URL}dotabg.jpg)`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }}
+      >
+        <div className="absolute inset-0 bg-linear-to-br from-slate-950/35 via-slate-900/50 to-slate-950/45"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-8 sm:mb-12 pt-4 sm:pt-8 px-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-purple-400 to-pink-400 mb-3 sm:mb-4 leading-tight">
             Permum Suga Dotachid Skill Improvement
