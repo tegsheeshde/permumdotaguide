@@ -9,9 +9,10 @@ import Guide from "./components/Guide";
 import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
 import Chat from "./components/Chat";
+import Feed from "./components/Feed";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("chat"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', or 'guide'
+  const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'feed', or 'guide'
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || ""
   );
@@ -174,6 +175,10 @@ export default function App() {
         {currentPage === "players" && <PlayerList userName={userName} />}
 
         {currentPage === "statistics" && <Statistics />}
+
+        {currentPage === "feed" && (
+          <Feed userName={userName} setShowNameModal={setShowNameModal} />
+        )}
 
         {currentPage === "guide" && <Guide />}
       </div>

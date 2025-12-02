@@ -12,6 +12,7 @@ import {
   BarChart3,
   MessageCircle,
   VoteIcon,
+  Image,
 } from "lucide-react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -55,6 +56,7 @@ export default function Header({
   }, []);
 
   const navItems = [
+    { id: "feed", label: "Feed", icon: Image, color: "pink" },
     { id: "chat", label: "Chat", icon: MessageCircle, color: "green" },
     { id: "home", label: "Polls", icon: VoteIcon, color: "green" },
     { id: "draft", label: "Draft", icon: Swords, color: "purple" },
@@ -72,6 +74,7 @@ export default function Header({
       cyan: "bg-cyan-600 text-white shadow-lg",
       yellow: "bg-yellow-600 text-white shadow-lg",
       blue: "bg-blue-600 text-white shadow-lg",
+      pink: "bg-pink-600 text-white shadow-lg",
     };
     return colors[color] || colors.green;
   };

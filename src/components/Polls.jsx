@@ -67,18 +67,30 @@ export default function Polls({ userName, setShowNameModal }) {
     const updatedPolls = polls.map((poll) => {
       if (poll.id === pollId) {
         // Check if user already voted in this poll
-        const hasVoted = poll.votes.some((vote) =>
+        const previousVoteIndex = poll.votes.findIndex((vote) =>
           vote.voters.includes(userName)
         );
-        if (hasVoted) {
-          return poll;
-        }
 
         const newVotes = [...poll.votes];
-        newVotes[optionIndex] = {
-          count: newVotes[optionIndex].count + 1,
-          voters: [...newVotes[optionIndex].voters, userName],
-        };
+
+        // If user already voted, remove their previous vote
+        if (previousVoteIndex !== -1) {
+          newVotes[previousVoteIndex] = {
+            count: newVotes[previousVoteIndex].count - 1,
+            voters: newVotes[previousVoteIndex].voters.filter(
+              (voter) => voter !== userName
+            ),
+          };
+        }
+
+        // Add new vote (or keep the same if clicking the same option)
+        if (previousVoteIndex !== optionIndex) {
+          newVotes[optionIndex] = {
+            count: newVotes[optionIndex].count + 1,
+            voters: [...newVotes[optionIndex].voters, userName],
+          };
+        }
+
         return { ...poll, votes: newVotes };
       }
       return poll;
@@ -168,7 +180,7 @@ export default function Polls({ userName, setShowNameModal }) {
   return (
     <>
       {/* Polls Section */}
-      <div className="mb-8 sm:mb-12 bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-none rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-slate-700/50 mx-2 sm:mx-0">
+      <div className="mb-8 sm:mb-12 bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-slate-700/50 mx-2 sm:mx-0">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3">
             <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-green-400 shrink-0" />
@@ -295,14 +307,14 @@ export default function Polls({ userName, setShowNameModal }) {
                         <div key={idx} className="relative">
                           <button
                             onClick={() => handleVote(poll.id, idx)}
-                            disabled={hasVoted}
                             className={`w-full relative z-10 p-3 sm:p-4 rounded-lg border text-left transition-all duration-200 flex items-center justify-between group ${
                               isSelected
-                                ? "border-green-500 bg-green-500/10"
+                                ? "border-green-500 bg-green-500/10 hover:border-green-400"
                                 : hasVoted
-                                ? "border-slate-700 bg-slate-800/50 opacity-75 cursor-default"
+                                ? "border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-700/50"
                                 : "border-slate-700 bg-slate-800 hover:border-green-500/50 hover:bg-slate-700"
                             }`}
+                            title={hasVoted ? "Click to change your vote" : "Click to vote"}
                           >
                             <span
                               className={`font-medium text-sm sm:text-base ${
@@ -310,6 +322,9 @@ export default function Polls({ userName, setShowNameModal }) {
                               }`}
                             >
                               {option}
+                              {isSelected && (
+                                <span className="ml-2 text-xs text-green-400/70">(Your vote)</span>
+                              )}
                             </span>
                             {hasVoted && (
                               <span className="text-slate-400 text-sm sm:text-base">
