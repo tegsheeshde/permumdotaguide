@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Swords, Users, Trash2, RotateCcw, UserPlus, Award, Download } from "lucide-react";
+import { Swords, Users, Trash2, RotateCcw, UserPlus, Award, Download, MessageCircle, X as XIcon } from "lucide-react";
 import { db } from "../firebase";
 import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import * as htmlToImage from 'html-to-image';
+import Chat from "./Chat";
 
 export default function Draft() {
   // Draft Picker State
@@ -17,6 +18,13 @@ export default function Draft() {
   const [isLoadingDraft, setIsLoadingDraft] = useState(true);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+
+  // Chat overlay state
+  const [showChat, setShowChat] = useState(false);
+  const [userName, setUserName] = useState(
+    localStorage.getItem("userName") || ""
+  );
+  const [showNameModal, setShowNameModal] = useState(false);
 
   // Registered players state
   const [registeredPlayers, setRegisteredPlayers] = useState({});
@@ -242,7 +250,7 @@ export default function Draft() {
   };
 
   return (
-    <div className="space-y-6 px-2 sm:px-0">
+    <div className="space-y-6 px-2 sm:px-0 relative">
       {/* Draft Header */}
       <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-700/50">
         <div className="flex items-center justify-between">
@@ -778,6 +786,89 @@ export default function Draft() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Floating Chat Button */}
+      {!showChat && (
+        <button
+          onClick={() => setShowChat(true)}
+          className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110"
+          title="Open chat"
+        >
+          <MessageCircle className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Chat Overlay */}
+      {showChat && (
+        <div className="fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6 bg-black/30 backdrop-blur-xs">
+          <div className="w-full sm:w-[450px] h-[600px] max-h-[90vh] bg-slate-900 rounded-xl shadow-2xl border-2 border-slate-700 flex flex-col">
+            {/* Chat Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-green-400" />
+                <h3 className="text-lg font-bold text-white">Draft Chat</h3>
+              </div>
+              <button
+                onClick={() => setShowChat(false)}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+                title="Close chat"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Chat Content */}
+            <div className="flex-1 overflow-hidden">
+              <Chat userName={userName} setShowNameModal={setShowNameModal} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Name Modal for Chat */}
+      {showNameModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl p-6 sm:p-8 max-w-md w-full border-2 border-slate-700 shadow-2xl">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+              Welcome!
+            </h2>
+            <p className="text-slate-300 mb-6">
+              Enter your name to chat
+            </p>
+            <input
+              type="text"
+              placeholder="Your name"
+              defaultValue={userName}
+              className="w-full p-3 sm:p-4 bg-slate-900 text-white rounded-lg border-2 border-slate-600 focus:border-green-500 focus:outline-none mb-4 text-base sm:text-lg"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const name = e.target.value.trim();
+                  if (name) {
+                    setUserName(name);
+                    localStorage.setItem("userName", name);
+                    setShowNameModal(false);
+                  }
+                }
+              }}
+              autoFocus
+            />
+            <button
+              onClick={(e) => {
+                const input = e.target.previousElementSibling;
+                const name = input.value.trim();
+                if (name) {
+                  setUserName(name);
+                  localStorage.setItem("userName", name);
+                  setShowNameModal(false);
+                }
+              }}
+              className="w-full py-3 sm:py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors duration-200 text-base sm:text-lg"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

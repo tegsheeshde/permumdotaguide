@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MessageCircle, Send, Trash2, Users } from "lucide-react";
+import { MessageCircle, Send, Trash2, Users, Gamepad2, Home, AlertCircle, ExternalLink } from "lucide-react";
 import { db } from "../firebase";
 import {
   collection,
@@ -14,6 +14,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
+import { usePresence } from "../hooks/usePresence";
 
 /**
  * Chat Component - Optimized for Firebase Free Tier
@@ -28,9 +29,11 @@ export default function Chat({ userName, setShowNameModal }) {
   const [newMessage, setNewMessage] = useState("");
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom of messages
+  const { onlineUsers, error: presenceError } = usePresence(userName);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -53,9 +56,6 @@ export default function Chat({ userName, setShowNameModal }) {
       );
 
       await Promise.all(deletePromises);
-      if (snapshot.docs.length > 0) {
-        console.log(`Cleaned up ${snapshot.docs.length} old messages`);
-      }
     } catch (error) {
       console.error("Error cleaning up old messages:", error);
     }
@@ -168,16 +168,58 @@ export default function Chat({ userName, setShowNameModal }) {
     }
   };
 
-  // Get unique active users from recent messages
-  const getActiveUsers = () => {
-    const uniqueUsers = [...new Set(messages.map((msg) => msg.userName))];
-    return uniqueUsers.length;
+  // Get online users count and details
+  const getOnlineUsersCount = () => {
+    return Object.values(onlineUsers).filter(
+      (user) => user.state === "online" || user.state === "away"
+    ).length;
+  };
+
+  const getOnlineUsersList = () => {
+    return Object.entries(onlineUsers)
+      .filter(([, user]) => user.state === "online" || user.state === "away")
+      .map(([name, user]) => ({ name, ...user }));
+  };
+
+  // Get status icon and color
+  const getStatusDisplay = (user) => {
+    if (!user) return { icon: "offline", color: "bg-slate-500", label: "Offline" };
+
+    if (user.gameStatus === "in-game") {
+      return { icon: "gamepad", color: "text-red-500", label: "In Game" };
+    }
+
+    if (user.gameStatus === "in-lobby") {
+      return { icon: "home", color: "text-yellow-500", label: "In Lobby" };
+    }
+
+    if (user.state === "online") {
+      return { icon: "online", color: "bg-green-500", label: "Online" };
+    }
+
+    if (user.state === "away") {
+      return { icon: "away", color: "bg-yellow-500", label: "Away" };
+    }
+
+    return { icon: "offline", color: "bg-slate-500", label: "Offline" };
+  };
+
+  // Render status indicator
+  const StatusIndicator = ({ status, className = "" }) => {
+    if (status.icon === "gamepad") {
+      return <Gamepad2 className={`${status.color} ${className}`} />;
+    }
+    if (status.icon === "home") {
+      return <Home className={`${status.color} ${className}`} />;
+    }
+    // For online, away, offline - use filled circle (dot)
+    return <div className={`rounded-full ${status.color} ${className}`} />;
   };
 
   return (
-    <div className="space-y-4 px-2 sm:px-0 h-[calc(100vh-12rem)]">
+    <div className="space-y-4 px-2 sm:px-0 h-full flex flex-col">
       {/* Chat Header */}
-      <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-700/50">
+      <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-700/50 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MessageCircle className="w-6 h-6 text-green-400" />
@@ -188,17 +230,94 @@ export default function Chat({ userName, setShowNameModal }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
+          <button
+            onClick={() => setShowOnlineUsers(!showOnlineUsers)}
+            className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer"
+            title="View online users"
+          >
             <Users className="w-4 h-4 text-cyan-400" />
             <span className="text-cyan-400 font-semibold">
-              {getActiveUsers()} sda online
+              {getOnlineUsersCount()} online
             </span>
-          </div>
+          </button>
         </div>
+
+        {/* Online Users Dropdown */}
+        {showOnlineUsers && (
+          <div className="mt-4 p-3 bg-slate-900/70 rounded-lg border border-slate-700/50">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4 text-cyan-400" />
+              Online Users ({getOnlineUsersCount()})
+            </h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {getOnlineUsersList().length > 0 ? (
+                getOnlineUsersList().map((user) => {
+                  const status = getStatusDisplay(user);
+                  return (
+                    <div
+                      key={user.name}
+                      className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-2">
+                        <StatusIndicator status={status} className="w-3 h-3" />
+                        <span className="text-white text-sm font-medium">
+                          {user.name}
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-400">
+                        {status.label}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-slate-400 text-sm text-center py-2">
+                  No users online
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Presence Error Banner */}
+      {presenceError && (
+        <div className="bg-yellow-900/50 border-2 border-yellow-600/50 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-yellow-400 font-semibold text-sm mb-1">
+              Real-Time Presence Not Enabled
+            </h3>
+            <p className="text-yellow-200/90 text-sm mb-3">
+              {presenceError === "PERMISSION_DENIED"
+                ? "Firebase Realtime Database permissions need to be configured."
+                : "Firebase Realtime Database needs to be enabled to show online status."}
+            </p>
+            <div className="space-y-2 text-xs text-yellow-200/80">
+              <p className="font-semibold">Quick Fix (2 minutes):</p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>Go to Firebase Console → Realtime Database</li>
+                <li>Click "Create Database"</li>
+                <li>Choose "Start in test mode"</li>
+                <li>Click "Enable"</li>
+                <li>Refresh this page</li>
+              </ol>
+              <a
+                href="https://console.firebase.google.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-yellow-400 hover:text-yellow-300 font-medium mt-2"
+              >
+                Open Firebase Console
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages Container */}
-      <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border-2 border-slate-700/50 flex flex-col h-[calc(100%-8rem)]">
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border-2 border-slate-700/50 flex flex-col flex-1 min-h-0">
         {/* Messages List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {isLoadingMessages ? (
@@ -222,6 +341,8 @@ export default function Chat({ userName, setShowNameModal }) {
             <>
               {messages.map((message) => {
                 const isOwnMessage = message.userName === userName;
+                const userStatus = onlineUsers[message.userName];
+                const status = getStatusDisplay(userStatus);
                 return (
                   <div
                     key={message.id}
@@ -236,13 +357,16 @@ export default function Chat({ userName, setShowNameModal }) {
                     >
                       {/* Username and Time */}
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <span
-                          className={`text-xs font-semibold ${
-                            isOwnMessage ? "text-green-400" : "text-cyan-400"
-                          }`}
-                        >
-                          {message.userName}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <StatusIndicator status={status} className="w-2.5 h-2.5" title={status.label} />
+                          <span
+                            className={`text-xs font-semibold ${
+                              isOwnMessage ? "text-green-400" : "text-cyan-400"
+                            }`}
+                          >
+                            {message.userName}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-slate-500">
                             {formatTime(message.timestamp)}
@@ -312,13 +436,6 @@ export default function Chat({ userName, setShowNameModal }) {
             {newMessage.length}/500 тэмдэгт • Бидний чат 7 хоногийн дараа автоматаар устана
           </p>
         </div>
-      </div>
-
-      {/* Info Banner */}
-      <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700/50">
-        <p className="text-xs text-slate-400 text-center">
-          Чат үнэгүй Firebase хувилбарт зориулсан тул сүүлийн 50 зурвас харагдана. Хүндэтгэлтэй хандаж, хөгжилдөөрэй лөгөгнүүдээ!
-        </p>
       </div>
     </div>
   );

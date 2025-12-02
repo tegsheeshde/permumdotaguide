@@ -11,6 +11,7 @@ import {
   LogOut,
   BarChart3,
   MessageCircle,
+  VoteIcon,
 } from "lucide-react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -54,11 +55,11 @@ export default function Header({
   }, []);
 
   const navItems = [
-    { id: "home", label: "Polls", icon: Home, color: "green" },
+    { id: "chat", label: "Chat", icon: MessageCircle, color: "green" },
+    { id: "home", label: "Polls", icon: VoteIcon, color: "green" },
     { id: "draft", label: "Draft", icon: Swords, color: "purple" },
     { id: "schedule", label: "Schedule", icon: Calendar, color: "orange" },
     { id: "players", label: "Players", icon: Users, color: "cyan" },
-    { id: "chat", label: "Chat", icon: MessageCircle, color: "green" },
     { id: "statistics", label: "Statistics", icon: BarChart3, color: "yellow" },
     { id: "guide", label: "Guide", icon: BookOpen, color: "blue" },
   ];
@@ -260,8 +261,7 @@ export default function Header({
           </div>
         )}
       </div>
-
-      {/* Click outside to close user menu */}
+      
       {showUserMenu && (
         <div
           className="fixed inset-0 z-40"

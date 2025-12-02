@@ -11,7 +11,7 @@ import Statistics from "./components/Statistics";
 import Chat from "./components/Chat";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("home"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', or 'guide'
+  const [currentPage, setCurrentPage] = useState("chat"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', or 'guide'
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || ""
   );
@@ -152,6 +152,10 @@ export default function App() {
       />
 
       <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8 py-6">
+        {currentPage === "chat" && (
+          <Chat userName={userName} setShowNameModal={setShowNameModal} />
+        )}
+
         {currentPage === "home" && (
           <Polls userName={userName} setShowNameModal={setShowNameModal} />
         )}
@@ -168,10 +172,6 @@ export default function App() {
         {currentPage === "draft" && <Draft />}
 
         {currentPage === "players" && <PlayerList userName={userName} />}
-
-        {currentPage === "chat" && (
-          <Chat userName={userName} setShowNameModal={setShowNameModal} />
-        )}
 
         {currentPage === "statistics" && <Statistics />}
 

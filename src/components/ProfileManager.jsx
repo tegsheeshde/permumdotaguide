@@ -30,8 +30,8 @@ export default function ProfileManager({ userName, onProfileUpdate, triggerClass
     { value: "archon", label: "Archon", color: "text-orange-400", mmr: "2310-3079" },
     { value: "legend", label: "Legend", color: "text-purple-400", mmr: "3080-3849" },
     { value: "ancient", label: "Ancient", color: "text-cyan-400", mmr: "3850-4619" },
-    { value: "divine", label: "Divine", color: "text-blue-400", mmr: "4620-5420" },
-    { value: "immortal", label: "Immortal", color: "text-red-400", mmr: "5420+" },
+    { value: "divine", label: "Divine", color: "text-blue-400", mmr: "4620-5600" },
+    { value: "immortal", label: "Immortal", color: "text-red-400", mmr: "5600+" },
   ];
 
   const roles = [
