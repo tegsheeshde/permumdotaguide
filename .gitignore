@@ -27,3 +27,8 @@ dist-ssr
 .env
 .env.local
 .env.production
+
+# Discord bot
+discord-bot/.env
+discord-bot/node_modules
+discord-bot/firebase-service-account.json

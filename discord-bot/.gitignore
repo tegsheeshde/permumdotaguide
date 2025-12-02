@@ -1,0 +1,15 @@
+# Environment variables
+.env
+
+# Firebase service account credentials
+firebase-service-account.json
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store

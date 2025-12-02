@@ -15,6 +15,8 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { usePresence } from "../hooks/usePresence";
+import { sendChatToDiscord } from "../utils/discord";
+import DiscordStatus from "./DiscordStatus";
 
 /**
  * Chat Component - Optimized for Firebase Free Tier
@@ -109,12 +111,20 @@ export default function Chat({ userName, setShowNameModal }) {
     setIsSending(true);
 
     try {
+      const messageText = newMessage.trim();
       const messagesCollectionRef = collection(db, "chat-messages");
+
       await addDoc(messagesCollectionRef, {
-        text: newMessage.trim(),
+        text: messageText,
         userName: userName,
         timestamp: serverTimestamp(),
+        source: 'app', // Mark source to prevent bot echoing
       });
+
+      // Send to Discord (async, don't await)
+      sendChatToDiscord(userName, messageText).catch(err =>
+        console.warn('Discord sync failed:', err)
+      );
 
       setNewMessage("");
       setTimeout(scrollToBottom, 100);
@@ -279,6 +289,9 @@ export default function Chat({ userName, setShowNameModal }) {
           </div>
         )}
       </div>
+
+      {/* Discord Status Integration */}
+      <DiscordStatus />
 
       {/* Presence Error Banner */}
       {presenceError && (

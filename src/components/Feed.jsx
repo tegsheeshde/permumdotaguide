@@ -13,6 +13,7 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
+import { sendFeedPostToDiscord } from "../utils/discord";
 
 const REACTIONS = [
   { id: "like", icon: ThumbsUp, label: "Like", color: "text-blue-500" },
@@ -79,7 +80,7 @@ export default function Feed({ userName, setShowNameModal }) {
       // Auto-convert Imgur links to direct links
       const imageUrl = newPost.imageUrl.trim() ? getImgurDirectLink(newPost.imageUrl.trim()) : "";
 
-      await addDoc(postsCollectionRef, {
+      const postData = {
         content: newPost.content.trim(),
         imageUrl: imageUrl,
         videoUrl: newPost.videoUrl.trim(),
@@ -88,7 +89,14 @@ export default function Feed({ userName, setShowNameModal }) {
         timestamp: serverTimestamp(),
         reactions: {},
         comments: [],
-      });
+      };
+
+      await addDoc(postsCollectionRef, postData);
+
+      // Send to Discord (async, don't await)
+      sendFeedPostToDiscord(userName, postData).catch(err =>
+        console.warn('Discord sync failed:', err)
+      );
 
       setNewPost({ content: "", imageUrl: "", videoUrl: "", type: "text" });
     } catch (error) {
@@ -266,14 +274,14 @@ export default function Feed({ userName, setShowNameModal }) {
           <textarea
             value={newPost.content}
             onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-            placeholder={userName ? "What's on your mind?" : "Enter your name to post..."}
+            placeholder={userName ? "What tilted you today?" : "Enter your name to post..."}
             disabled={!userName || isSending}
             className="w-full px-4 py-3 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 resize-none"
             rows="3"
             maxLength={1000}
           />
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={newPost.imageUrl}
