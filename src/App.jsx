@@ -8,9 +8,10 @@ import Schedule from "./components/Schedule";
 import Guide from "./components/Guide";
 import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
+import Chat from "./components/Chat";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("home"); // 'home', 'draft', 'schedule', 'players', 'statistics', or 'guide'
+  const [currentPage, setCurrentPage] = useState("home"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', or 'guide'
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || ""
   );
@@ -166,7 +167,11 @@ export default function App() {
 
         {currentPage === "draft" && <Draft />}
 
-        {currentPage === "players" && <PlayerList />}
+        {currentPage === "players" && <PlayerList userName={userName} />}
+
+        {currentPage === "chat" && (
+          <Chat userName={userName} setShowNameModal={setShowNameModal} />
+        )}
 
         {currentPage === "statistics" && <Statistics />}
 

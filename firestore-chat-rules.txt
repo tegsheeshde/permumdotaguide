@@ -1,0 +1,43 @@
+// Firebase Firestore Security Rules for Chat Feature
+// Copy these rules to your Firebase Console > Firestore Database > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Existing rules for your app-data collection
+    match /app-data/{document=**} {
+      allow read: true;
+      allow write: true;
+    }
+
+    // Chat messages collection - optimized for free tier
+    match /chat-messages/{messageId} {
+      // Anyone can read messages (for real-time chat)
+      allow read: true;
+
+      // Anyone can create messages
+      allow create: if request.resource.data.userName is string
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() <= 500
+                    && request.resource.data.timestamp == request.time;
+
+      // Users can only delete their own messages
+      allow delete: if request.auth != null
+                    || resource.data.userName == request.resource.data.userName;
+
+      // Prevent updates (messages can't be edited, only deleted)
+      allow update: false;
+    }
+  }
+}
+
+// INSTRUCTIONS:
+// 1. Go to Firebase Console: https://console.firebase.google.com
+// 2. Select your project
+// 3. Navigate to: Firestore Database > Rules
+// 4. Copy the rules above (starting from "rules_version") and paste them
+// 5. Click "Publish" to save the rules
+//
+// Note: Current rules allow anyone to read/write for simplicity.
+// For production, consider adding Firebase Authentication.

@@ -268,7 +268,7 @@ export default function Schedule({
                 const availablePlayers = Object.entries(
                   scheduleData.availability
                 )
-                  .filter(([_, slots]) => slots[slotKey])
+                  .filter(([, slots]) => slots[slotKey])
                   .map(([player]) => player);
                 const isUserAvailable =
                   scheduleData.availability[userName]?.[slotKey];

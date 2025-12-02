@@ -35,7 +35,7 @@ export default function Statistics() {
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
         <h3 className="text-sm font-semibold text-white mb-2">About this Dashboard</h3>
         <p className="text-xs text-slate-400">
-          This interactive dashboard displays real-time statistics and analytics for our Dota 2 community.
+          This interactive dashboard displays statistics and analytics for our Dota 2 Permum toxic community.
           Explore player performance, match history, win rates, and more.
         </p>
       </div>
