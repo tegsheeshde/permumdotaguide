@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Map, Users, Zap, Brain, Trophy, Plus, BarChart3, BookOpen, Home, Swords, UserPlus, Trash2, RotateCcw } from 'lucide-react';
+import { Target, Map, Users, Zap, Brain, Trophy, Plus, BarChart3, BookOpen, Home, Swords, UserPlus, Trash2, RotateCcw, Calendar, Clock, Check, X } from 'lucide-react';
 import { db } from './firebase';
 import { doc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 
@@ -16,7 +16,7 @@ const defaultPolls = [
 ];
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('home'); // 'home', 'guide', or 'draft'
+  const [currentPage, setCurrentPage] = useState('home'); // 'home', 'guide', 'draft', or 'schedule'
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [showNameModal, setShowNameModal] = useState(!localStorage.getItem('userName'));
@@ -355,6 +355,103 @@ export default function App() {
     updateDraft(reset);
   };
 
+  // Schedule Maker State
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const timeSlots = [
+    '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
+    '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+  ];
+
+  const [scheduleData, setScheduleData] = useState({
+    availability: {} // { playerName: { 'Monday-08:00': true, ... } }
+  });
+  const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
+
+  // Load and sync schedule data from Firebase
+  useEffect(() => {
+    const scheduleRef = doc(db, 'app-data', 'schedule');
+
+    const unsubscribe = onSnapshot(scheduleRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setScheduleData(docSnap.data());
+      } else {
+        const initialSchedule = { availability: {} };
+        setDoc(scheduleRef, initialSchedule);
+        setScheduleData(initialSchedule);
+      }
+      setIsLoadingSchedule(false);
+    }, (error) => {
+      console.error('Error loading schedule:', error);
+      setIsLoadingSchedule(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const updateSchedule = async (updates) => {
+    try {
+      const scheduleRef = doc(db, 'app-data', 'schedule');
+      await updateDoc(scheduleRef, updates);
+    } catch (error) {
+      console.error('Error updating schedule:', error);
+    }
+  };
+
+  const toggleAvailability = (day, time) => {
+    if (!userName) {
+      setShowNameModal(true);
+      return;
+    }
+
+    const slotKey = `${day}-${time}`;
+    const userAvailability = scheduleData.availability[userName] || {};
+    const newAvailability = {
+      ...scheduleData.availability,
+      [userName]: {
+        ...userAvailability,
+        [slotKey]: !userAvailability[slotKey]
+      }
+    };
+
+    updateSchedule({ availability: newAvailability });
+  };
+
+  const clearMyAvailability = () => {
+    if (!userName) return;
+
+    const newAvailability = { ...scheduleData.availability };
+    delete newAvailability[userName];
+    updateSchedule({ availability: newAvailability });
+  };
+
+  // Calculate best time slots
+  const getBestTimeSlots = () => {
+    const slotCounts = {};
+    const slotPlayers = {};
+
+    // Count availability for each slot
+    Object.entries(scheduleData.availability).forEach(([player, slots]) => {
+      Object.entries(slots).forEach(([slotKey, isAvailable]) => {
+        if (isAvailable) {
+          slotCounts[slotKey] = (slotCounts[slotKey] || 0) + 1;
+          if (!slotPlayers[slotKey]) slotPlayers[slotKey] = [];
+          slotPlayers[slotKey].push(player);
+        }
+      });
+    });
+
+    // Sort by count (descending)
+    const sorted = Object.entries(slotCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([slot, count]) => ({
+        slot,
+        count,
+        players: slotPlayers[slot]
+      }));
+
+    return sorted;
+  };
+
   return (
     <div className="min-h-screen relative p-4 sm:p-6 lg:p-8">
       {/* Background Image with Overlay */}
@@ -412,10 +509,10 @@ export default function App() {
           </div>
           <p className="text-white text-base sm:text-lg mb-6 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] font-medium">Choose a focus area to level up your game</p>
 
-          <div className="flex justify-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap justify-center gap-2">
             <button
               onClick={() => setCurrentPage('home')}
-              className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 ${
                 currentPage === 'home'
                   ? 'bg-green-600 text-white shadow-lg scale-105'
                   : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
@@ -426,7 +523,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setCurrentPage('draft')}
-              className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 ${
                 currentPage === 'draft'
                   ? 'bg-purple-600 text-white shadow-lg scale-105'
                   : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
@@ -436,8 +533,19 @@ export default function App() {
               <span className="text-sm sm:text-base">Draft</span>
             </button>
             <button
+              onClick={() => setCurrentPage('schedule')}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 ${
+                currentPage === 'schedule'
+                  ? 'bg-orange-600 text-white shadow-lg scale-105'
+                  : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
+              }`}
+            >
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-base">Schedule</span>
+            </button>
+            <button
               onClick={() => setCurrentPage('guide')}
-              className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 ${
                 currentPage === 'guide'
                   ? 'bg-blue-600 text-white shadow-lg scale-105'
                   : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
@@ -592,6 +700,247 @@ export default function App() {
               )}
             </div>
           </>
+        )}
+
+        {/* Schedule Page - Auto Schedule Maker */}
+        {currentPage === 'schedule' && (
+          <div className="space-y-6 px-2 sm:px-0">
+            {/* Header */}
+            <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border-2 border-slate-700/50">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
+                    <Calendar className="w-6 h-6 text-orange-400" />
+                    Auto Schedule Finder
+                  </h2>
+                  <p className="text-slate-400 text-sm sm:text-base mt-1">
+                    Select your available times and we'll find the best match for everyone
+                  </p>
+                </div>
+                {userName && (
+                  <button
+                    onClick={clearMyAvailability}
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm sm:text-base"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear My Times
+                  </button>
+                )}
+              </div>
+
+              {userName && (
+                <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3 sm:p-4">
+                  <p className="text-blue-300 text-sm sm:text-base">
+                    <strong>Logged in as:</strong> {userName}
+                  </p>
+                  <p className="text-blue-400/70 text-xs sm:text-sm mt-1">
+                    Click on time slots below to mark your availability
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {isLoadingSchedule ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                  <p className="text-slate-400">Loading schedule...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Best Time Slots Recommendation */}
+                {Object.keys(scheduleData.availability).length > 0 && (
+                  <div className="bg-linear-to-br from-green-900/40 to-green-800/20 backdrop-blur-sm rounded-xl p-4 sm:p-6 border-2 border-green-600/50">
+                    <h3 className="text-lg sm:text-xl font-bold text-green-300 mb-4 flex items-center gap-2">
+                      <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />
+                      Recommended Time Slots
+                    </h3>
+
+                    {getBestTimeSlots().length === 0 ? (
+                      <p className="text-slate-400 text-sm sm:text-base">
+                        No common availability yet. Players need to select their available times.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {getBestTimeSlots().slice(0, 5).map((slot, idx) => {
+                          const [day, time] = slot.slot.split('-');
+                          const totalPlayers = Object.keys(scheduleData.availability).length;
+                          const percentage = ((slot.count / totalPlayers) * 100).toFixed(0);
+
+                          return (
+                            <div
+                              key={slot.slot}
+                              className={`p-3 sm:p-4 rounded-lg border-2 ${
+                                idx === 0
+                                  ? 'bg-green-900/30 border-green-500'
+                                  : 'bg-green-900/20 border-green-600/30'
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                  {idx === 0 && (
+                                    <Trophy className="w-5 h-5 text-yellow-400 shrink-0" />
+                                  )}
+                                  <div>
+                                    <span className="text-white font-bold text-base sm:text-lg">
+                                      {day} at {time}
+                                    </span>
+                                    {idx === 0 && (
+                                      <span className="ml-2 text-xs sm:text-sm text-yellow-400 font-semibold">
+                                        BEST MATCH
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-green-300 font-bold text-sm sm:text-base">
+                                    {slot.count}/{totalPlayers} players
+                                  </span>
+                                  <span className="text-green-400/70 text-xs sm:text-sm ml-2">
+                                    ({percentage}%)
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Progress Bar */}
+                              <div className="w-full bg-slate-700 rounded-full h-2 mb-2">
+                                <div
+                                  className="bg-linear-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+
+                              {/* Available Players */}
+                              <div className="flex flex-wrap gap-1.5">
+                                {slot.players.map((player, pIdx) => (
+                                  <span
+                                    key={pIdx}
+                                    className="inline-flex items-center px-2 py-1 bg-green-600/20 text-green-300 border border-green-600/30 rounded-md text-xs"
+                                  >
+                                    <Check className="w-3 h-3 mr-1" />
+                                    {player}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Time Grid */}
+                <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border-2 border-slate-700/50">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
+                    Select Your Available Times
+                  </h3>
+
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[800px]">
+                      {/* Header Row */}
+                      <div className="grid grid-cols-8 gap-1 mb-2">
+                        <div className="p-2 text-slate-400 text-xs sm:text-sm font-semibold">Time</div>
+                        {daysOfWeek.map((day) => (
+                          <div key={day} className="p-2 text-center text-slate-300 text-xs sm:text-sm font-semibold">
+                            {day.slice(0, 3)}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Time Slots Grid */}
+                      <div className="space-y-1">
+                        {timeSlots.map((time) => (
+                          <div key={time} className="grid grid-cols-8 gap-1">
+                            <div className="p-2 sm:p-3 bg-slate-900/50 rounded text-slate-300 text-xs sm:text-sm font-medium flex items-center">
+                              {time}
+                            </div>
+                            {daysOfWeek.map((day) => {
+                              const slotKey = `${day}-${time}`;
+                              const userAvailability = scheduleData.availability[userName] || {};
+                              const isUserAvailable = userAvailability[slotKey];
+
+                              // Count how many people are available at this slot
+                              const availableCount = Object.values(scheduleData.availability).filter(
+                                (userSlots) => userSlots[slotKey]
+                              ).length;
+
+                              return (
+                                <button
+                                  key={slotKey}
+                                  onClick={() => toggleAvailability(day, time)}
+                                  className={`p-2 sm:p-3 rounded transition-all text-xs sm:text-sm font-medium ${
+                                    isUserAvailable
+                                      ? 'bg-green-600 hover:bg-green-700 text-white border-2 border-green-400'
+                                      : availableCount > 0
+                                      ? 'bg-blue-900/30 hover:bg-blue-800/40 text-blue-300 border border-blue-600/30'
+                                      : 'bg-slate-900/30 hover:bg-slate-800/50 text-slate-500 border border-slate-700'
+                                  }`}
+                                  title={
+                                    availableCount > 0
+                                      ? `${availableCount} player(s) available`
+                                      : 'No one available'
+                                  }
+                                >
+                                  {isUserAvailable ? (
+                                    <Check className="w-3 h-3 sm:w-4 sm:h-4 mx-auto" />
+                                  ) : (
+                                    <span className="text-xs">{availableCount || ''}</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="mt-4 pt-4 border-t border-slate-700 flex flex-wrap gap-4 text-xs sm:text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-green-600 border-2 border-green-400 rounded flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-slate-300">Your availability</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-blue-900/30 border border-blue-600/30 rounded flex items-center justify-center">
+                        <span className="text-blue-300 text-xs">N</span>
+                      </div>
+                      <span className="text-slate-300">N other players available</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-slate-900/30 border border-slate-700 rounded"></div>
+                      <span className="text-slate-300">No availability</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Players Summary */}
+                {Object.keys(scheduleData.availability).length > 0 && (
+                  <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border-2 border-slate-700/50">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-4 flex items-center gap-2">
+                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
+                      Players ({Object.keys(scheduleData.availability).length})
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.keys(scheduleData.availability).map((player) => (
+                        <span
+                          key={player}
+                          className="px-3 py-2 bg-slate-900/50 text-white rounded-lg border border-slate-700 text-sm"
+                        >
+                          {player}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {/* Draft Page - Team Picker */}
