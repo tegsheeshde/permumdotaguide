@@ -123,15 +123,37 @@ export default function Header({
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-semibold truncate">{userName}</p>
                           {scheduleData?.playerStats?.[userName] ? (
-                            <p className="text-slate-400 text-xs mt-0.5">
-                              {scheduleData.playerStats[userName].rank > 0 ? (
-                                <span className="text-yellow-400">
-                                  Rank: {Math.floor(scheduleData.playerStats[userName].rank / 10)} • MMR: {scheduleData.playerStats[userName].mmr}
-                                </span>
-                              ) : (
-                                "Community Member"
+                            <div className="space-y-1">
+                              <p className="text-slate-400 text-xs mt-0.5">
+                                {scheduleData.playerStats[userName].rank ? (
+                                  <span className="text-yellow-400">
+                                    Rank: {typeof scheduleData.playerStats[userName].rank === 'number' 
+                                      ? `${Math.floor(scheduleData.playerStats[userName].rank / 10)}` // OpenDota Rank Tier
+                                      : scheduleData.playerStats[userName].rank.charAt(0).toUpperCase() + scheduleData.playerStats[userName].rank.slice(1) // Manual Rank String
+                                    } 
+                                    {scheduleData.playerStats[userName].mmr && ` • MMR: ${scheduleData.playerStats[userName].mmr}`}
+                                  </span>
+                                ) : (
+                                  "Community Member"
+                                )}
+                              </p>
+                              {/* Additional Profile Fields */}
+                              {scheduleData.playerStats[userName].role && (
+                                <p className="text-slate-400 text-xs">
+                                  Role: <span className="text-white">{scheduleData.playerStats[userName].role.charAt(0).toUpperCase() + scheduleData.playerStats[userName].role.slice(1)}</span>
+                                </p>
                               )}
-                            </p>
+                              {scheduleData.playerStats[userName].phone && (
+                                <p className="text-slate-400 text-xs">
+                                  Phone: <span className="text-white">{scheduleData.playerStats[userName].phone}</span>
+                                </p>
+                              )}
+                              {scheduleData.playerStats[userName].preferredHeroes && (
+                                <p className="text-slate-400 text-xs truncate max-w-[200px]">
+                                  Heroes: <span className="text-white">{scheduleData.playerStats[userName].preferredHeroes}</span>
+                                </p>
+                              )}
+                            </div>
                           ) : (
                             <p className="text-slate-400 text-xs mt-0.5">Community Member</p>
                           )}

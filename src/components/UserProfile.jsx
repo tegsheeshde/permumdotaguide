@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import ProfileManager from "./ProfileManager";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -190,7 +191,7 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
     <>
       {/* Link Profile Button */}
       {userName && (
-        <div className={compact ? "w-full" : "flex items-center gap-2"}>
+        <div className={compact ? "w-full space-y-2" : "flex items-center gap-2"}>
           <button
             onClick={() => setShowSteamIdModal(true)}
             className={`flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-xs sm:text-sm ${
@@ -198,8 +199,15 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
             }`}
           >
             <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-            {scheduleData.playerStats[userName] ? 'Update Profile' : 'Link Steam Profile'}
+            {scheduleData.playerStats[userName] ? 'Update Steam Profile' : 'Link Steam Profile'}
           </button>
+          
+          {/* Profile Manager Integration */}
+          <ProfileManager 
+            userName={userName} 
+            triggerClassName={compact ? "w-full" : "w-auto"} 
+          />
+
           {/* Debug info - only show in non-compact mode */}
           {!compact && (
             <span className="text-xs text-slate-500">
@@ -211,7 +219,7 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
 
       {/* Steam ID Modal */}
       {showSteamIdModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-54 bg-black/70 backdrop-blur-sm">
           <div className="bg-slate-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full border-2 border-slate-700 shadow-2xl">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
               Link Your Dota 2 Profile
