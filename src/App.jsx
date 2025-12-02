@@ -7,9 +7,10 @@ import Draft from "./components/Draft";
 import Schedule from "./components/Schedule";
 import Guide from "./components/Guide";
 import PlayerList from "./components/PlayerList";
+import Statistics from "./components/Statistics";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("home"); // 'home', 'draft', 'schedule', 'players', or 'guide'
+  const [currentPage, setCurrentPage] = useState("home"); // 'home', 'draft', 'schedule', 'players', 'statistics', or 'guide'
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || ""
   );
@@ -96,9 +97,9 @@ export default function App() {
       <div
         className="fixed inset-0 z-0"
         style={{
-          backgroundImage: `url(${import.meta.env.BASE_URL}dotabg.jpg)`,
+          backgroundImage: `url(${import.meta.env.BASE_URL}dota.png)`,
           backgroundSize: "cover",
-          backgroundPosition: "center",
+          backgroundPosition: "center top",
           backgroundAttachment: "fixed",
         }}
       >
@@ -166,6 +167,8 @@ export default function App() {
         {currentPage === "draft" && <Draft />}
 
         {currentPage === "players" && <PlayerList />}
+
+        {currentPage === "statistics" && <Statistics />}
 
         {currentPage === "guide" && <Guide />}
       </div>

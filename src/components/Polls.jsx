@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BarChart3, Plus } from "lucide-react";
+import { BarChart3, Plus, Trash2 } from "lucide-react";
 import { db } from "../firebase";
 import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 
@@ -12,6 +12,7 @@ const defaultPolls = [
       { count: 0, voters: [] },
       { count: 0, voters: [] },
     ],
+    createdAt: new Date().toISOString(),
   },
 ];
 
@@ -102,6 +103,7 @@ export default function Polls({ userName, setShowNameModal }) {
         question: newPoll.question,
         options: filteredOptions,
         votes: filteredOptions.map(() => ({ count: 0, voters: [] })),
+        createdAt: new Date().toISOString(),
       };
       const updatedPolls = [...polls, poll];
 
@@ -124,10 +126,49 @@ export default function Polls({ userName, setShowNameModal }) {
     setNewPoll({ ...newPoll, options: [...newPoll.options, ""] });
   };
 
+  const handleRemovePoll = async (pollId) => {
+    if (!confirm("Are you sure you want to delete this poll?")) {
+      return;
+    }
+
+    const updatedPolls = polls.filter((poll) => poll.id !== pollId);
+
+    // Update Firebase
+    try {
+      const pollsRef = doc(db, "app-data", "polls");
+      await updateDoc(pollsRef, { list: updatedPolls });
+    } catch (error) {
+      console.error("Error removing poll:", error);
+      // Fallback to local state if Firebase fails
+      setPolls(updatedPolls);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Unknown date";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+  };
+
   return (
     <>
       {/* Polls Section */}
-      <div className="mb-8 sm:mb-12 bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-slate-700/50 mx-2 sm:mx-0">
+      <div className="mb-8 sm:mb-12 bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-none rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-slate-700/50 mx-2 sm:mx-0">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3">
             <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-green-400 shrink-0" />
@@ -212,7 +253,7 @@ export default function Polls({ userName, setShowNameModal }) {
           <div className="space-y-4 sm:space-y-6">
             {polls.map((poll) => {
               const totalVotes = poll.votes.reduce(
-                (a, b) => a.count + b.count,
+                (acc, vote) => acc + vote.count,
                 0
               );
               const hasVoted = poll.votes.some((vote) =>
@@ -224,9 +265,23 @@ export default function Polls({ userName, setShowNameModal }) {
                   key={poll.id}
                   className="p-4 sm:p-6 bg-slate-900/50 rounded-lg border border-slate-700"
                 >
-                  <h4 className="text-base sm:text-lg font-semibold text-white mb-4">
-                    {poll.question}
-                  </h4>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h4 className="text-base sm:text-lg font-semibold text-white">
+                        {poll.question}
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Created {formatDate(poll.createdAt)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRemovePoll(poll.id)}
+                      className="p-2 hover:bg-red-600/20 rounded-lg transition-colors text-red-400 hover:text-red-300"
+                      title="Delete poll"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                   <div className="space-y-3">
                     {poll.options.map((option, idx) => {
                       const voteData = poll.votes[idx];

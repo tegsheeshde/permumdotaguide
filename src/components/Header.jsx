@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Home,
   Swords,
@@ -9,7 +9,10 @@ import {
   X,
   User,
   LogOut,
+  BarChart3,
 } from "lucide-react";
+import { db } from "../firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 import UserProfile from "./UserProfile";
 
 /**
@@ -26,12 +29,35 @@ export default function Header({
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [registeredPlayers, setRegisteredPlayers] = useState({});
+
+  // Load registered players from Firebase (real-time updates)
+  useEffect(() => {
+    const playersRef = doc(db, "app-data", "players");
+
+    const unsubscribe = onSnapshot(
+      playersRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setRegisteredPlayers(docSnap.data().list || {});
+        } else {
+          setRegisteredPlayers({});
+        }
+      },
+      (error) => {
+        console.error("Error loading registered players:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   const navItems = [
     { id: "home", label: "Polls", icon: Home, color: "green" },
     { id: "draft", label: "Draft", icon: Swords, color: "purple" },
     { id: "schedule", label: "Schedule", icon: Calendar, color: "orange" },
     { id: "players", label: "Players", icon: Users, color: "cyan" },
+    { id: "statistics", label: "Statistics", icon: BarChart3, color: "yellow" },
     { id: "guide", label: "Guide", icon: BookOpen, color: "blue" },
   ];
 
@@ -41,6 +67,7 @@ export default function Header({
       purple: "bg-purple-600 text-white shadow-lg",
       orange: "bg-orange-600 text-white shadow-lg",
       cyan: "bg-cyan-600 text-white shadow-lg",
+      yellow: "bg-yellow-600 text-white shadow-lg",
       blue: "bg-blue-600 text-white shadow-lg",
     };
     return colors[color] || colors.green;
@@ -94,9 +121,9 @@ export default function Header({
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg border border-slate-700 transition-colors"
                 >
-                  {scheduleData?.playerStats?.[userName]?.avatar ? (
+                  {registeredPlayers?.[userName]?.avatar ? (
                     <img
-                      src={scheduleData.playerStats[userName].avatar}
+                      src={registeredPlayers[userName].avatar}
                       alt={userName}
                       className="w-6 h-6 rounded-full border border-slate-600"
                     />
@@ -113,44 +140,44 @@ export default function Header({
                   <div className="absolute right-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden z-50">
                     <div className="p-4 border-b border-slate-700">
                       <div className="flex items-center gap-3">
-                        {scheduleData?.playerStats?.[userName]?.avatar && (
+                        {registeredPlayers?.[userName]?.avatar && (
                           <img
-                            src={scheduleData.playerStats[userName].avatar}
+                            src={registeredPlayers[userName].avatar}
                             alt={userName}
                             className="w-12 h-12 rounded-full border-2 border-slate-600"
                           />
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-semibold truncate">{userName}</p>
-                          {scheduleData?.playerStats?.[userName] ? (
+                          {registeredPlayers?.[userName] ? (
                             <div className="space-y-1">
                               <p className="text-slate-400 text-xs mt-0.5">
-                                {scheduleData.playerStats[userName].rank ? (
+                                {registeredPlayers[userName].rank ? (
                                   <span className="text-yellow-400">
-                                    Rank: {typeof scheduleData.playerStats[userName].rank === 'number' 
-                                      ? `${Math.floor(scheduleData.playerStats[userName].rank / 10)}` // OpenDota Rank Tier
-                                      : scheduleData.playerStats[userName].rank.charAt(0).toUpperCase() + scheduleData.playerStats[userName].rank.slice(1) // Manual Rank String
-                                    } 
-                                    {scheduleData.playerStats[userName].mmr && ` • MMR: ${scheduleData.playerStats[userName].mmr}`}
+                                    Rank: {typeof registeredPlayers[userName].rank === 'number'
+                                      ? `${Math.floor(registeredPlayers[userName].rank / 10)}` // OpenDota Rank Tier
+                                      : registeredPlayers[userName].rank.charAt(0).toUpperCase() + registeredPlayers[userName].rank.slice(1) // Manual Rank String
+                                    }
+                                    {registeredPlayers[userName].mmr && ` • MMR: ${typeof registeredPlayers[userName].mmr === 'number' ? registeredPlayers[userName].mmr.toLocaleString() : parseInt(registeredPlayers[userName].mmr, 10).toLocaleString()}`}
                                   </span>
                                 ) : (
                                   "Community Member"
                                 )}
                               </p>
                               {/* Additional Profile Fields */}
-                              {scheduleData.playerStats[userName].role && (
+                              {registeredPlayers[userName].role && (
                                 <p className="text-slate-400 text-xs">
-                                  Role: <span className="text-white">{scheduleData.playerStats[userName].role.charAt(0).toUpperCase() + scheduleData.playerStats[userName].role.slice(1)}</span>
+                                  Role: <span className="text-white">{registeredPlayers[userName].role.charAt(0).toUpperCase() + registeredPlayers[userName].role.slice(1)}</span>
                                 </p>
                               )}
-                              {scheduleData.playerStats[userName].phone && (
+                              {registeredPlayers[userName].phone && (
                                 <p className="text-slate-400 text-xs">
-                                  Phone: <span className="text-white">{scheduleData.playerStats[userName].phone}</span>
+                                  Phone: <span className="text-white">{registeredPlayers[userName].phone}</span>
                                 </p>
                               )}
-                              {scheduleData.playerStats[userName].preferredHeroes && (
+                              {registeredPlayers[userName].preferredHeroes && (
                                 <p className="text-slate-400 text-xs truncate max-w-[200px]">
-                                  Heroes: <span className="text-white">{scheduleData.playerStats[userName].preferredHeroes}</span>
+                                  Heroes: <span className="text-white">{registeredPlayers[userName].preferredHeroes}</span>
                                 </p>
                               )}
                             </div>

@@ -42,16 +42,6 @@ export default function ProfileManager({ userName, onProfileUpdate, triggerClass
     { value: "hard-support", label: "Hard Support (Position 5)", icon: Shield },
   ];
 
-  const playstyles = [
-    "Aggressive",
-    "Defensive",
-    "Farming",
-    "Ganking",
-    "Pushing",
-    "Team Fighter",
-    "Split Pusher",
-    "Initiator",
-  ];
 
   // Calculate rank based on MMR
   const calculateRank = (mmr) => {
@@ -150,9 +140,9 @@ export default function ProfileManager({ userName, onProfileUpdate, triggerClass
     return (
       <button
         onClick={handleEdit}
-        className={`flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors ${triggerClassName || 'w-full'}`}
+        className={`flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs sm:text-sm transition-colors ${triggerClassName || 'w-full'}`}
       >
-        <Edit2 className="w-4 h-4" />
+        <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
         <span>Edit Profile Details</span>
       </button>
     );
@@ -266,19 +256,6 @@ export default function ProfileManager({ userName, onProfileUpdate, triggerClass
                   className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Rank Reference Guide */}
-          <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4">
-            <p className="text-blue-300 text-sm font-semibold mb-2">Dota 2 Rank Reference:</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-              {ranks.map((rank) => (
-                <div key={rank.value} className="flex flex-col">
-                  <span className={rank.color + " font-bold"}>{rank.label}</span>
-                  <span className="text-slate-400">{rank.mmr}</span>
-                </div>
-              ))}
             </div>
           </div>
 
