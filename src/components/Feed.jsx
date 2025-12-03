@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Image, Send, Trash2, ThumbsUp, Heart, Smile, Angry, Users, MessageCircle } from "lucide-react";
+import { Image, Send, Trash2, ThumbsUp, Heart, Smile, Angry, Users, MessageCircle, Skull, Flame, PartyPopper, Brain, Eye, Ghost, Trophy, Reply } from "lucide-react";
 import { db } from "../firebase";
 import {
   collection,
@@ -16,10 +16,40 @@ import {
 import { sendFeedPostToDiscord } from "../utils/discord";
 
 const REACTIONS = [
-  { id: "like", icon: ThumbsUp, label: "Like", color: "text-blue-500" },
-  { id: "love", icon: Heart, label: "Love", color: "text-red-500" },
-  { id: "haha", icon: Smile, label: "Haha", color: "text-yellow-500" },
-  { id: "angry", icon: Angry, label: "Angry", color: "text-orange-500" },
+  { id: "like", icon: ThumbsUp, label: "Like", color: "text-blue-500", emoji: "👍" },
+  { id: "love", icon: Heart, label: "Love", color: "text-red-500", emoji: "❤️" },
+  { id: "haha", icon: Smile, label: "Haha", color: "text-yellow-500", emoji: "😂" },
+  { id: "angry", icon: Angry, label: "Angry", color: "text-orange-500", emoji: "😡" },
+  { id: "gg", icon: Trophy, label: "GG", color: "text-yellow-400", emoji: "🏆" },
+  { id: "toxic", icon: Skull, label: "Toxic", color: "text-green-500", emoji: "☠️" },
+  { id: "fire", icon: Flame, label: "Fire", color: "text-orange-400", emoji: "🔥" },
+  { id: "party", icon: PartyPopper, label: "Party", color: "text-pink-500", emoji: "🎉" },
+  { id: "bigbrain", icon: Brain, label: "Big Brain", color: "text-purple-400", emoji: "🧠" },
+  { id: "watching", icon: Eye, label: "Watching", color: "text-slate-400", emoji: "👀" },
+  { id: "noob", icon: Ghost, label: "Noob", color: "text-gray-400", emoji: "👻" },
+];
+
+const FUNNY_PLACEHOLDERS = [
+  "What tilted you today?",
+  "What is your problem?",
+  "Shut up and just send your meme",
+  "Don't feed... your thoughts here",
+  "Who ruined your MMR today?",
+  "Share your suffering...",
+  "Report or compliment? You decide",
+  "GG EZ or gg no re?",
+  "Carry or feeder? Post it here",
+  "Did someone pick your hero?",
+  "Blame your team here",
+  "Post your copium",
+  "Which role got flamed today?",
+  "Mid or feed?",
+  "Another jungle LC story?",
+  "Who bought shadow amulet?",
+  "Share your PTSD moment",
+  "Did you get fountain camped?",
+  "Tell us about the intentional feeder",
+  "Toxic or just passionate?",
 ];
 
 export default function Feed({ userName, setShowNameModal }) {
@@ -28,8 +58,90 @@ export default function Feed({ userName, setShowNameModal }) {
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [showReactions, setShowReactions] = useState(null);
+  const [showCommentReactions, setShowCommentReactions] = useState(null);
+  const [hoveredReaction, setHoveredReaction] = useState(null);
+  const [longPressTimer, setLongPressTimer] = useState(null);
   const [commentText, setCommentText] = useState({});
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
+  const [mentionCursorPos, setMentionCursorPos] = useState(null);
+  const [placeholder, setPlaceholder] = useState(FUNNY_PLACEHOLDERS[0]);
   const postsEndRef = useRef(null);
+
+  // Get random placeholder
+  const getRandomPlaceholder = () => {
+    const randomIndex = Math.floor(Math.random() * FUNNY_PLACEHOLDERS.length);
+    return FUNNY_PLACEHOLDERS[randomIndex];
+  };
+
+  // Get unique users from posts for mention suggestions
+  const getAvailableUsers = () => {
+    const users = new Set();
+    posts.forEach(post => {
+      users.add(post.userName);
+      post.comments?.forEach(comment => {
+        users.add(comment.userName);
+      });
+    });
+    return Array.from(users).filter(u => u !== userName); // Exclude self
+  };
+
+  // Parse text and highlight mentions
+  const parseMentions = (text) => {
+    if (!text) return text;
+
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={index} className="text-cyan-400 font-semibold bg-cyan-400/10 px-1 rounded">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  // Handle text input for mentions
+  const handleTextChange = (value, field = 'content') => {
+    if (field === 'content') {
+      setNewPost({ ...newPost, content: value });
+    }
+
+    // Check for @ symbol to trigger mention dropdown
+    const lastAtIndex = value.lastIndexOf('@');
+    if (lastAtIndex !== -1) {
+      const textAfterAt = value.substring(lastAtIndex + 1);
+      const hasSpace = textAfterAt.includes(' ');
+
+      if (!hasSpace && textAfterAt.length <= 20) {
+        setShowMentionDropdown(true);
+        setMentionSearch(textAfterAt.toLowerCase());
+        setMentionCursorPos(lastAtIndex);
+      } else {
+        setShowMentionDropdown(false);
+      }
+    } else {
+      setShowMentionDropdown(false);
+    }
+  };
+
+  // Insert mention into text
+  const insertMention = (username) => {
+    const beforeMention = newPost.content.substring(0, mentionCursorPos);
+    const afterMention = newPost.content.substring(mentionCursorPos + mentionSearch.length + 1);
+    const newContent = `${beforeMention}@${username} ${afterMention}`;
+
+    setNewPost({ ...newPost, content: newContent });
+    setShowMentionDropdown(false);
+    setMentionSearch("");
+  };
+
+  // Set random placeholder on mount
+  useEffect(() => {
+    setPlaceholder(getRandomPlaceholder());
+  }, []);
 
   // Load posts from Firestore
   useEffect(() => {
@@ -142,7 +254,7 @@ export default function Feed({ userName, setShowNameModal }) {
     try {
       const postRef = doc(db, "feed-posts", postId);
       await updateDoc(postRef, { reactions: updatedReactions });
-      setShowReactions(null);
+      // Don't close picker - allow multiple reactions
     } catch (error) {
       console.error("Error updating reaction:", error);
     }
@@ -176,6 +288,76 @@ export default function Feed({ userName, setShowNameModal }) {
       setCommentText({ ...commentText, [postId]: "" });
     } catch (error) {
       console.error("Error adding comment:", error);
+    }
+  };
+
+  // Handle reply to comment
+  const handleReplyToComment = (postId, commentUserName) => {
+    if (!userName) {
+      setShowNameModal(true);
+      return;
+    }
+
+    // Auto-fill comment box with @mention
+    const mention = `@${commentUserName} `;
+    setCommentText({ ...commentText, [postId]: mention });
+
+    // Focus on comment input
+    const commentInput = document.querySelector(`input[data-post-id="${postId}"]`);
+    if (commentInput) {
+      commentInput.focus();
+      // Move cursor to end
+      setTimeout(() => {
+        commentInput.setSelectionRange(mention.length, mention.length);
+      }, 0);
+    }
+  };
+
+  // Handle comment reaction
+  const handleCommentReaction = async (postId, commentId, reactionType) => {
+    if (!userName) {
+      setShowNameModal(true);
+      return;
+    }
+
+    const post = posts.find((p) => p.id === postId);
+    if (!post) return;
+
+    const updatedComments = post.comments.map((comment) => {
+      if (comment.id === commentId) {
+        const reactions = comment.reactions || {};
+        const userReactions = reactions[userName] || [];
+
+        let updatedUserReactions;
+        if (userReactions.includes(reactionType)) {
+          // Remove reaction
+          updatedUserReactions = userReactions.filter((r) => r !== reactionType);
+        } else {
+          // Add reaction (can have multiple)
+          updatedUserReactions = [...userReactions, reactionType];
+        }
+
+        const updatedReactions = {
+          ...reactions,
+          [userName]: updatedUserReactions,
+        };
+
+        // Clean up empty arrays
+        if (updatedUserReactions.length === 0) {
+          delete updatedReactions[userName];
+        }
+
+        return { ...comment, reactions: updatedReactions };
+      }
+      return comment;
+    });
+
+    try {
+      const postRef = doc(db, "feed-posts", postId);
+      await updateDoc(postRef, { comments: updatedComments });
+      // Don't close picker - allow multiple reactions
+    } catch (error) {
+      console.error("Error updating comment reaction:", error);
     }
   };
 
@@ -225,6 +407,39 @@ export default function Feed({ userName, setShowNameModal }) {
     return counts;
   };
 
+  // Get users who reacted with a specific reaction type
+  const getUsersWhoReacted = (reactions, reactionType) => {
+    if (!reactions) return [];
+
+    const users = [];
+    Object.entries(reactions).forEach(([username, userReactions]) => {
+      if (userReactions.includes(reactionType)) {
+        users.push(username);
+      }
+    });
+
+    return users;
+  };
+
+  // Handle long press for mobile
+  const handleTouchStart = (reactionKey) => {
+    const timer = setTimeout(() => {
+      setHoveredReaction(reactionKey);
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    // Keep tooltip visible for a bit after touch
+    setTimeout(() => {
+      setHoveredReaction(null);
+    }, 2000);
+  };
+
   // Extract YouTube ID
   const getYouTubeId = (url) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -271,15 +486,43 @@ export default function Feed({ userName, setShowNameModal }) {
       {/* Create Post */}
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-700/50">
         <form onSubmit={handleCreatePost} className="space-y-3">
-          <textarea
-            value={newPost.content}
-            onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-            placeholder={userName ? "What tilted you today?" : "Enter your name to post..."}
-            disabled={!userName || isSending}
-            className="w-full px-4 py-3 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 resize-none"
-            rows="3"
-            maxLength={1000}
-          />
+          <div className="relative">
+            <textarea
+              value={newPost.content}
+              onChange={(e) => handleTextChange(e.target.value)}
+              onFocus={() => setPlaceholder(getRandomPlaceholder())}
+              placeholder={userName ? `${placeholder} (Use @ to mention)` : "Enter your name to post..."}
+              disabled={!userName || isSending}
+              className="w-full px-4 py-3 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 resize-none"
+              rows="3"
+              maxLength={1000}
+            />
+
+            {/* Mention Autocomplete Dropdown */}
+            {showMentionDropdown && (
+              <div className="absolute z-10 mt-1 w-64 bg-slate-900 border-2 border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                {getAvailableUsers()
+                  .filter(user => user.toLowerCase().includes(mentionSearch))
+                  .slice(0, 5)
+                  .map((user) => (
+                    <button
+                      key={user}
+                      type="button"
+                      onClick={() => insertMention(user)}
+                      className="w-full px-4 py-2 text-left text-white hover:bg-slate-800 transition-colors flex items-center gap-2"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xs">
+                        {user.charAt(0).toUpperCase()}
+                      </div>
+                      <span>@{user}</span>
+                    </button>
+                  ))}
+                {getAvailableUsers().filter(user => user.toLowerCase().includes(mentionSearch)).length === 0 && (
+                  <div className="px-4 py-2 text-slate-400 text-sm">No users found</div>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
             <input
@@ -369,7 +612,9 @@ export default function Feed({ userName, setShowNameModal }) {
 
                 {/* Post Content */}
                 {post.content && (
-                  <p className="text-white mb-3 whitespace-pre-wrap wrap-break-word">{post.content}</p>
+                  <p className="text-white mb-3 whitespace-pre-wrap wrap-break-word">
+                    {parseMentions(post.content)}
+                  </p>
                 )}
 
                 {/* Post Image */}
@@ -399,15 +644,40 @@ export default function Feed({ userName, setShowNameModal }) {
 
                 {/* Reaction Summary */}
                 {reactionSummary && (
-                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-700/50">
+                  <div className="flex items-center gap-1.5 mb-3 pb-3 border-b border-slate-700/50 flex-wrap">
                     {Object.entries(reactionSummary).map(([reactionType, count]) => {
                       const reaction = REACTIONS.find((r) => r.id === reactionType);
                       if (!reaction) return null;
-                      const Icon = reaction.icon;
+                      const usersWhoReacted = getUsersWhoReacted(post.reactions, reactionType);
+                      const reactionKey = `${post.id}-${reactionType}`;
+
                       return (
-                        <div key={reactionType} className="flex items-center gap-1 text-sm">
-                          <Icon className={`w-4 h-4 ${reaction.color}`} />
-                          <span className="text-slate-400">{count}</span>
+                        <div
+                          key={reactionType}
+                          className="relative inline-flex items-center gap-1 px-2 py-1 bg-slate-800/50 rounded-full border border-slate-700/50 hover:border-slate-600 transition-colors cursor-pointer select-none"
+                          onMouseEnter={() => setHoveredReaction(reactionKey)}
+                          onMouseLeave={() => setHoveredReaction(null)}
+                          onTouchStart={() => handleTouchStart(reactionKey)}
+                          onTouchEnd={handleTouchEnd}
+                        >
+                          <span className="text-base">{reaction.emoji}</span>
+                          <span className="text-slate-300 text-xs font-semibold">{count}</span>
+
+                          {/* Tooltip showing who reacted */}
+                          {hoveredReaction === reactionKey && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 border-2 border-slate-700 rounded-lg shadow-xl z-30 whitespace-nowrap pointer-events-none">
+                              <div className="text-xs font-semibold text-slate-400 mb-1">{reaction.label}</div>
+                              <div className="space-y-1 max-h-32 overflow-y-auto">
+                                {usersWhoReacted.map((user, idx) => (
+                                  <div key={idx} className="text-sm text-white">
+                                    {user === userName ? 'You' : user}
+                                  </div>
+                                ))}
+                              </div>
+                              {/* Arrow */}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-700"></div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -427,23 +697,35 @@ export default function Feed({ userName, setShowNameModal }) {
 
                     {/* Reactions Picker */}
                     {showReactions === post.id && (
-                      <div className="absolute bottom-full left-0 mb-2 flex gap-2 p-2 bg-slate-900 rounded-lg border border-slate-700 shadow-xl z-10">
-                        {REACTIONS.map((reaction) => {
-                          const Icon = reaction.icon;
-                          const hasReaction = userReactions.includes(reaction.id);
-                          return (
-                            <button
-                              key={reaction.id}
-                              onClick={() => handleReaction(post.id, reaction.id)}
-                              className={`p-2 rounded-lg hover:bg-slate-800 transition-all transform hover:scale-110 ${
-                                hasReaction ? "bg-slate-800" : ""
-                              }`}
-                              title={reaction.label}
-                            >
-                              <Icon className={`w-6 h-6 ${reaction.color}`} />
-                            </button>
-                          );
-                        })}
+                      <div className="absolute bottom-full left-0 mb-2 bg-slate-900 rounded-lg border-2 border-slate-700 shadow-xl z-20 min-w-[280px] sm:max-w-none">
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3">
+                          {REACTIONS.map((reaction) => {
+                            const hasReaction = userReactions.includes(reaction.id);
+                            return (
+                              <button
+                                key={reaction.id}
+                                onClick={() => handleReaction(post.id, reaction.id)}
+                                className={`group relative p-2 rounded-lg hover:bg-slate-800 transition-all transform hover:scale-110 active:scale-95 ${
+                                  hasReaction ? "bg-slate-800 ring-2 ring-cyan-400" : ""
+                                }`}
+                                title={reaction.label}
+                              >
+                                <span className="text-xl sm:text-2xl">{reaction.emoji}</span>
+                                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-white bg-slate-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+                                  {reaction.label}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="border-t border-slate-700 p-2">
+                          <button
+                            onClick={() => setShowReactions(null)}
+                            className="w-full px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-sm rounded-lg transition-colors font-semibold"
+                          >
+                            Done
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -459,26 +741,128 @@ export default function Feed({ userName, setShowNameModal }) {
 
                 {/* Comments Section */}
                 <div className="space-y-3">
-                  {post.comments?.map((comment) => (
-                    <div key={comment.id} className="flex gap-2">
-                      <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                        {comment.userName.charAt(0).toUpperCase()}
+                  {post.comments?.map((comment) => {
+                    const commentReactionSummary = getReactionSummary(comment.reactions);
+                    const userCommentReactions = comment.reactions?.[userName] || [];
+                    const commentReactionId = `${post.id}-${comment.id}`;
+
+                    return (
+                      <div key={comment.id} className="flex gap-2">
+                        <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          {comment.userName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 bg-slate-900/50 rounded-lg p-3">
+                          <p className="text-cyan-400 font-semibold text-sm">{comment.userName}</p>
+                          <p className="text-white text-sm mt-1">{parseMentions(comment.text)}</p>
+
+                          {/* Comment Reaction Summary */}
+                          {commentReactionSummary && (
+                            <div className="flex items-center gap-1 mt-2 flex-wrap">
+                              {Object.entries(commentReactionSummary).map(([reactionType, count]) => {
+                                const reaction = REACTIONS.find((r) => r.id === reactionType);
+                                if (!reaction) return null;
+                                const usersWhoReacted = getUsersWhoReacted(comment.reactions, reactionType);
+                                const commentReactionKey = `${post.id}-${comment.id}-${reactionType}`;
+
+                                return (
+                                  <div
+                                    key={reactionType}
+                                    className="relative inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-800/50 rounded-full border border-slate-700/50 hover:border-slate-600 transition-colors cursor-pointer select-none"
+                                    onMouseEnter={() => setHoveredReaction(commentReactionKey)}
+                                    onMouseLeave={() => setHoveredReaction(null)}
+                                    onTouchStart={() => handleTouchStart(commentReactionKey)}
+                                    onTouchEnd={handleTouchEnd}
+                                  >
+                                    <span className="text-xs">{reaction.emoji}</span>
+                                    <span className="text-slate-300 text-xs font-semibold">{count}</span>
+
+                                    {/* Tooltip showing who reacted */}
+                                    {hoveredReaction === commentReactionKey && (
+                                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-slate-900 border-2 border-slate-700 rounded-lg shadow-xl z-30 whitespace-nowrap pointer-events-none">
+                                        <div className="text-xs font-semibold text-slate-400 mb-1">{reaction.label}</div>
+                                        <div className="space-y-0.5 max-h-24 overflow-y-auto">
+                                          {usersWhoReacted.map((user, idx) => (
+                                            <div key={idx} className="text-xs text-white">
+                                              {user === userName ? 'You' : user}
+                                            </div>
+                                          ))}
+                                        </div>
+                                        {/* Arrow */}
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-700"></div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-3 mt-2">
+                            <p className="text-slate-500 text-xs">{formatTime(comment.timestamp)}</p>
+
+                            {/* React Button for Comments */}
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowCommentReactions(showCommentReactions === commentReactionId ? null : commentReactionId)}
+                                className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition-colors text-xs font-semibold"
+                              >
+                                <ThumbsUp className={`w-3 h-3 ${userCommentReactions.length > 0 ? "text-cyan-400 fill-cyan-400" : ""}`} />
+                                <span>React</span>
+                              </button>
+
+                              {/* Comment Reactions Picker */}
+                              {showCommentReactions === commentReactionId && (
+                                <div className="absolute bottom-full left-0 mb-2 bg-slate-900 rounded-lg border-2 border-slate-700 shadow-xl z-20 min-w-60 sm:max-w-none">
+                                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 p-2">
+                                    {REACTIONS.map((reaction) => {
+                                      const hasReaction = userCommentReactions.includes(reaction.id);
+                                      return (
+                                        <button
+                                          key={reaction.id}
+                                          onClick={() => handleCommentReaction(post.id, comment.id, reaction.id)}
+                                          className={`group relative p-1 rounded-lg hover:bg-slate-800 transition-all transform hover:scale-110 active:scale-95 ${
+                                            hasReaction ? "bg-slate-800 ring-2 ring-cyan-400" : ""
+                                          }`}
+                                          title={reaction.label}
+                                        >
+                                          <span className="text-lg">{reaction.emoji}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="border-t border-slate-700 p-1.5">
+                                    <button
+                                      onClick={() => setShowCommentReactions(null)}
+                                      className="w-full px-2 py-1 bg-slate-800 hover:bg-slate-700 text-white text-xs rounded-lg transition-colors font-semibold"
+                                    >
+                                      Done
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleReplyToComment(post.id, comment.userName)}
+                              className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition-colors text-xs font-semibold"
+                            >
+                              <Reply className="w-3 h-3" />
+                              <span>Reply</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 bg-slate-900/50 rounded-lg p-3">
-                        <p className="text-cyan-400 font-semibold text-sm">{comment.userName}</p>
-                        <p className="text-white text-sm mt-1">{comment.text}</p>
-                        <p className="text-slate-500 text-xs mt-1">{formatTime(comment.timestamp)}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Add Comment */}
                   <div className="flex gap-2">
                     <input
                       type="text"
+                      data-post-id={post.id}
                       value={commentText[post.id] || ""}
                       onChange={(e) => setCommentText({ ...commentText, [post.id]: e.target.value })}
-                      placeholder={userName ? "Write a comment..." : "Enter your name to comment"}
+                      placeholder={userName ? "Write a comment... (Use @ to mention)" : "Enter your name to comment"}
                       disabled={!userName}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {

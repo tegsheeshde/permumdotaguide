@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# discord-bot
+=======
 # Discord Bot for Dota 2 Community App
 
 This bot creates a full bidirectional integration between your Discord server and the Dota 2 web app.
@@ -272,3 +275,4 @@ Once running, you should see:
 - Feed posts appearing in Discord
 
 The bot will run continuously and automatically restart on crashes. For production, consider using PM2 or similar process manager.
+>>>>>>> aa50446 (Initial Discord bot commit)

@@ -14,6 +14,15 @@ export function useDiscordPresence() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Set timeout to stop loading after 5 seconds
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Discord presence loading timeout');
+        setError('Connection timeout - Discord bot may be offline');
+        setIsLoading(false);
+      }
+    }, 5000);
+
     try {
       // Listen to Discord presence data
       const presenceRef = ref(rtdb, 'discord/presence');
@@ -23,11 +32,13 @@ export function useDiscordPresence() {
           const data = snapshot.val() || {};
           setDiscordUsers(data);
           setIsLoading(false);
+          clearTimeout(loadingTimeout);
         },
         (err) => {
           console.error('Discord presence error:', err);
           setError(err.message);
           setIsLoading(false);
+          clearTimeout(loadingTimeout);
         }
       );
 
@@ -45,6 +56,7 @@ export function useDiscordPresence() {
       );
 
       return () => {
+        clearTimeout(loadingTimeout);
         unsubscribePresence();
         unsubscribeVoice();
       };
@@ -52,6 +64,7 @@ export function useDiscordPresence() {
       console.error('Discord hook error:', err);
       setError(err.message);
       setIsLoading(false);
+      clearTimeout(loadingTimeout);
     }
   }, []);
 
