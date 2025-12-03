@@ -10,7 +10,7 @@ import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
 import Chat from "./components/Chat";
 import Feed from "./components/Feed";
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'feed', or 'guide'
