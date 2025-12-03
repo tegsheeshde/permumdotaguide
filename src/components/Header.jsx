@@ -58,9 +58,8 @@ export default function Header({
   const navItems = [
     { id: "feed", label: "Feed", icon: Image, color: "pink" },
     { id: "chat", label: "Chat", icon: MessageCircle, color: "green" },
-    { id: "home", label: "Polls", icon: VoteIcon, color: "green" },
+    { id: "home", label: "Polls & Schedule", icon: VoteIcon, color: "orange" },
     { id: "draft", label: "Draft", icon: Swords, color: "purple" },
-    { id: "schedule", label: "Schedule", icon: Calendar, color: "orange" },
     { id: "players", label: "Players", icon: Users, color: "cyan" },
     { id: "statistics", label: "Statistics", icon: BarChart3, color: "yellow" },
   ];

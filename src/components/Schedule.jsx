@@ -276,7 +276,7 @@ export default function Schedule({
                   <div
                     key={`${day}-${time}`}
                     onClick={() => toggleAvailability(day, time)}
-                    className={`p-1 sm:p-2 border-r border-slate-700 last:border-r-0 min-h-[60px] sm:min-h-[80px] cursor-pointer transition-all duration-200 relative group ${
+                    className={`p-1 sm:p-2 border-r border-slate-700 last:border-r-0 min-h-[60px] sm:min-h-20 backdrop-blur-xs cursor-pointer transition-all duration-200 relative group ${
                       isUserAvailable
                         ? "bg-green-600/10 hover:bg-green-600/20"
                         : "hover:bg-slate-700/30"
