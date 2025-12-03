@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import Header from "./components/Header";
-import Polls from "./components/Polls";
 import Draft from "./components/Draft";
-import Schedule from "./components/Schedule";
+import ScheduleWithPolls from "./components/ScheduleWithPolls";
 import Guide from "./components/Guide";
 import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
@@ -160,12 +159,8 @@ export default function App() {
           <Chat userName={userName} setShowNameModal={setShowNameModal} />
         )}
 
-        {currentPage === "home" && (
-          <Polls userName={userName} setShowNameModal={setShowNameModal} />
-        )}
-
-        {currentPage === "schedule" && (
-          <Schedule
+        {(currentPage === "home" || currentPage === "schedule") && (
+          <ScheduleWithPolls
             scheduleData={scheduleData}
             updateSchedule={updateSchedule}
             userName={userName}

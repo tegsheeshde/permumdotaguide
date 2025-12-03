@@ -1,4 +1,5 @@
 import { BarChart3 } from "lucide-react";
+import Guide from "./Guide";
 
 /**
  * Statistics Component
@@ -30,6 +31,7 @@ export default function Statistics() {
           ></iframe>
         </div>
       </div>
+      <Guide/>
 
       {/* Info Card */}
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">

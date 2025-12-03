@@ -63,7 +63,6 @@ export default function Header({
     { id: "schedule", label: "Schedule", icon: Calendar, color: "orange" },
     { id: "players", label: "Players", icon: Users, color: "cyan" },
     { id: "statistics", label: "Statistics", icon: BarChart3, color: "yellow" },
-    { id: "guide", label: "Guide", icon: BookOpen, color: "blue" },
   ];
 
   const getActiveColor = (color) => {
