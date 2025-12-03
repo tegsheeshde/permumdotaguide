@@ -118,7 +118,7 @@ export default function App() {
               Welcome!
             </h2>
             <p className="text-slate-300 mb-6">
-              Enter your name to participate in polls
+              Write your name noob
             </p>
             <input
               type="text"
@@ -187,3 +187,4 @@ export default function App() {
     </div>
   );
 }
+

@@ -834,7 +834,7 @@ export default function Draft() {
               Welcome!
             </h2>
             <p className="text-slate-300 mb-6">
-              Enter your name to chat
+              Enter your name to chat Noob
             </p>
             <input
               type="text"
