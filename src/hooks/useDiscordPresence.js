@@ -18,11 +18,20 @@ export function useDiscordPresence() {
     let unsubscribePresence;
     let unsubscribeVoice;
     let didCancel = false;
+    let connectionAttempts = 0;
+    const MAX_ATTEMPTS = 3;
+
+    // Debug: Log database URL and connection attempt
+    console.log('[Discord Presence] Initializing connection...');
+    console.log('[Discord Presence] Database URL:', rtdb.app.options.databaseURL);
+    console.log('[Discord Presence] Project ID:', rtdb.app.options.projectId);
+    console.log('[Discord Presence] User Agent:', navigator.userAgent);
+    console.log('[Discord Presence] Browser:', /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) ? 'Safari' : 'Other');
 
     // Set timeout to stop loading after 10 seconds (increased for production)
     loadingTimeout = setTimeout(() => {
       if (!didCancel) {
-        console.warn('Discord presence loading timeout - bot may be offline or connection slow');
+        console.warn('[Discord Presence] ⏱️ Loading timeout - bot may be offline or connection slow');
         // Don't set error immediately, keep trying in background
         setIsLoading(false);
       }
@@ -31,22 +40,27 @@ export function useDiscordPresence() {
     try {
       // Listen to Discord presence data
       const presenceRef = ref(rtdb, 'discord/presence');
+      console.log('[Discord Presence] Setting up listener for path:', 'discord/presence');
+
       unsubscribePresence = onValue(
         presenceRef,
         (snapshot) => {
           if (!didCancel) {
             clearTimeout(loadingTimeout);
             const data = snapshot.val();
-            
+            console.log('[Discord Presence] Data received:', data ? 'Has data' : 'No data', 'Keys:', data ? Object.keys(data).length : 0);
+
             // If we got data (even if empty object), connection is working
             if (data !== null) {
               setDiscordUsers(data || {});
               setIsLoading(false);
               setError(null); // Clear any previous errors
+              console.log('[Discord Presence] ✅ Connection successful');
             } else {
               // No data at all - bot might not be running
               setDiscordUsers({});
               setIsLoading(false);
+              console.log('[Discord Presence] ⚠️ No data available');
               // Only set error if we've never received data
               if (Object.keys(discordUsers).length === 0) {
                 setError('No Discord data available - bot may be offline');
@@ -56,8 +70,27 @@ export function useDiscordPresence() {
         },
         (err) => {
           if (!didCancel) {
-            console.error('Discord presence error:', err);
-            setError(err.message);
+            connectionAttempts++;
+            console.error('[Discord Presence] ❌ Error (attempt ' + connectionAttempts + '):', err.code, err.message);
+            console.error('[Discord Presence] Full error:', err);
+            console.error('[Discord Presence] Error details:', {
+              code: err.code,
+              message: err.message,
+              name: err.name,
+              toString: err.toString()
+            });
+
+            // For Safari, provide specific guidance
+            const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+            let errorMessage = `Connection error: ${err.code || err.message}`;
+
+            if (err.code === 'PERMISSION_DENIED' || err.message?.includes('permission')) {
+              errorMessage = 'Permission denied. Please check Firebase Realtime Database rules.';
+            } else if (isSafari && (err.message?.includes('network') || err.message?.includes('quota'))) {
+              errorMessage = 'Safari connection issue. Try: Settings → Safari → Privacy → Disable "Prevent Cross-Site Tracking"';
+            }
+
+            setError(errorMessage);
             setIsLoading(false);
             clearTimeout(loadingTimeout);
           }

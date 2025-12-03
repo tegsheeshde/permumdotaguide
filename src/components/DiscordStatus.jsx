@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Users, Mic, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Mic, ChevronDown, ChevronUp, MonitorUp, Video, MicOff, VolumeX } from 'lucide-react';
 import { useDiscordPresence } from '../hooks/useDiscordPresence';
 
 export default function DiscordStatus() {
@@ -36,9 +36,19 @@ export default function DiscordStatus() {
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border-2 border-red-700/50">
         <div className="flex items-center gap-3">
           <Users className="w-6 h-6 text-red-400" />
-          <div>
+          <div className="flex-1">
             <p className="text-red-400 font-semibold">Discord Not Connected</p>
-            <p className="text-slate-400 text-sm">Bot offline or not configured</p>
+            <p className="text-slate-400 text-sm mb-2">
+              {error.includes('PERMISSION_DENIED')
+                ? 'Firebase permission denied - check database rules'
+                : error.includes('timeout')
+                  ? 'Connection timeout - bot may be offline'
+                  : 'Bot offline or not configured'}
+            </p>
+            <details className="text-xs text-slate-500">
+              <summary className="cursor-pointer hover:text-slate-400">Technical details</summary>
+              <p className="mt-2 font-mono bg-slate-900/50 p-2 rounded">{error}</p>
+            </details>
           </div>
         </div>
       </div>
@@ -175,10 +185,37 @@ export default function DiscordStatus() {
                     <h4 className="text-white font-semibold text-sm">{channelName}</h4>
                     <span className="text-xs text-slate-400">({members.length})</span>
                   </div>
-                  <div className="space-y-1 ml-6">
+                  <div className="space-y-2 ml-6">
                     {members.map((member) => (
-                      <div key={member.id} className="text-sm text-slate-300">
-                        • {member.nickname || member.username}
+                      <div key={member.id} className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-300">
+                          • {member.nickname || member.username}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {member.streaming && (
+                            <a
+                              href={`https://discord.com/channels/${member.guildId || ''}/${member.channelId || ''}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-1.5 py-0.5 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-full text-xs font-semibold transition-colors cursor-pointer"
+                              title="Click to watch in Discord"
+                            >
+                              <MonitorUp className="w-3 h-3" />
+                              <span>Live - Watch</span>
+                            </a>
+                          )}
+                          {member.selfVideo && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-600/20 text-blue-400 rounded-full text-xs" title="Camera on">
+                              <Video className="w-3 h-3" />
+                            </div>
+                          )}
+                          {member.selfMute && (
+                            <MicOff className="w-3 h-3 text-slate-500" title="Muted" />
+                          )}
+                          {member.selfDeaf && (
+                            <VolumeX className="w-3 h-3 text-slate-500" title="Deafened" />
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

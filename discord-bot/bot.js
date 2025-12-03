@@ -151,11 +151,20 @@ function startVoiceChannelMonitoring() {
       voiceChannels.forEach((channel) => {
         const members = Array.from(channel.members.values());
         if (members.length > 0) {
-          voiceStatus[channel.name] = members.map((member) => ({
-            username: member.user.username,
-            nickname: member.nickname || member.user.username,
-            id: member.user.id,
-          }));
+          voiceStatus[channel.name] = members.map((member) => {
+            const voiceState = member.voice;
+            return {
+              username: member.user.username,
+              nickname: member.nickname || member.user.username,
+              id: member.user.id,
+              streaming: voiceState?.streaming || false, // Screen sharing status
+              selfVideo: voiceState?.selfVideo || false, // Camera on/off
+              selfMute: voiceState?.selfMute || false,   // Muted
+              selfDeaf: voiceState?.selfDeaf || false,   // Deafened
+              guildId: GUILD_ID,                         // For Discord link
+              channelId: channel.id,                     // For Discord link
+            };
+          });
         }
       });
 

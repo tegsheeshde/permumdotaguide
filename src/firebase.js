@@ -16,8 +16,22 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+// Analytics may fail in Safari private mode, so wrap in try-catch
+let analytics;
+try {
+  analytics = getAnalytics(app);
+} catch (err) {
+  console.warn('Firebase Analytics failed to initialize (likely Safari Private Mode):', err.message);
+  analytics = null;
+}
+
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
+
+// Debug logging
+console.log('[Firebase] Initialized successfully');
+console.log('[Firebase] Database URL:', firebaseConfig.databaseURL);
+console.log('[Firebase] Project ID:', firebaseConfig.projectId);
 
 export { app, analytics, db, rtdb };
