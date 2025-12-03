@@ -54,7 +54,7 @@ const FUNNY_PLACEHOLDERS = [
 
 export default function Feed({ userName, setShowNameModal }) {
   const [posts, setPosts] = useState([]);
-  const [newPost, setNewPost] = useState({ content: "", imageUrl: "", videoUrl: "", type: "text" });
+  const [newPost, setNewPost] = useState({ content: "", imageUrl: "", videoUrl: "", gifUrl: "", type: "text" });
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [showReactions, setShowReactions] = useState(null);
@@ -180,7 +180,7 @@ export default function Feed({ userName, setShowNameModal }) {
       return;
     }
 
-    if (!newPost.content.trim() && !newPost.imageUrl.trim() && !newPost.videoUrl.trim()) {
+    if (!newPost.content.trim() && !newPost.imageUrl.trim() && !newPost.videoUrl.trim() && !newPost.gifUrl.trim()) {
       return;
     }
 
@@ -191,12 +191,14 @@ export default function Feed({ userName, setShowNameModal }) {
 
       // Auto-convert Imgur links to direct links
       const imageUrl = newPost.imageUrl.trim() ? getImgurDirectLink(newPost.imageUrl.trim()) : "";
+      const gifUrl = newPost.gifUrl.trim();
 
       const postData = {
         content: newPost.content.trim(),
         imageUrl: imageUrl,
         videoUrl: newPost.videoUrl.trim(),
-        type: imageUrl ? "image" : newPost.videoUrl ? "video" : "text",
+        gifUrl: gifUrl,
+        type: gifUrl ? "gif" : imageUrl ? "image" : newPost.videoUrl ? "video" : "text",
         userName: userName,
         timestamp: serverTimestamp(),
         reactions: {},
@@ -210,7 +212,7 @@ export default function Feed({ userName, setShowNameModal }) {
         console.warn('Discord sync failed:', err)
       );
 
-      setNewPost({ content: "", imageUrl: "", videoUrl: "", type: "text" });
+      setNewPost({ content: "", imageUrl: "", videoUrl: "", gifUrl: "", type: "text" });
     } catch (error) {
       console.error("Error creating post:", error);
       alert("Failed to create post. Please try again.");
@@ -524,22 +526,32 @@ export default function Feed({ userName, setShowNameModal }) {
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={newPost.imageUrl}
+                onChange={(e) => setNewPost({ ...newPost, imageUrl: e.target.value, videoUrl: "", gifUrl: "" })}
+                placeholder="Image URL (Imgur, Discord, etc.)"
+                disabled={!userName || isSending || newPost.videoUrl || newPost.gifUrl}
+                className="flex-1 px-4 py-2 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 text-sm"
+              />
+              <input
+                type="text"
+                value={newPost.videoUrl}
+                onChange={(e) => setNewPost({ ...newPost, videoUrl: e.target.value, imageUrl: "", gifUrl: "" })}
+                placeholder="YouTube URL"
+                disabled={!userName || isSending || newPost.imageUrl || newPost.gifUrl}
+                className="flex-1 px-4 py-2 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 text-sm"
+              />
+            </div>
             <input
               type="text"
-              value={newPost.imageUrl}
-              onChange={(e) => setNewPost({ ...newPost, imageUrl: e.target.value, videoUrl: "" })}
-              placeholder="Imgur URL (e.g., https://imgur.com/abc or https://i.imgur.com/abc.jpg)"
-              disabled={!userName || isSending || newPost.videoUrl}
-              className="flex-1 px-4 py-2 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 text-sm"
-            />
-            <input
-              type="text"
-              value={newPost.videoUrl}
-              onChange={(e) => setNewPost({ ...newPost, videoUrl: e.target.value, imageUrl: "" })}
-              placeholder="YouTube URL (e.g., https://youtube.com/watch?v=abc)"
-              disabled={!userName || isSending || newPost.imageUrl}
-              className="flex-1 px-4 py-2 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 text-sm"
+              value={newPost.gifUrl}
+              onChange={(e) => setNewPost({ ...newPost, gifUrl: e.target.value, imageUrl: "", videoUrl: "" })}
+              placeholder="GIF URL (Tenor, Giphy, or direct .gif link)"
+              disabled={!userName || isSending || newPost.imageUrl || newPost.videoUrl}
+              className="w-full px-4 py-2 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 text-sm"
             />
           </div>
 
@@ -547,15 +559,16 @@ export default function Feed({ userName, setShowNameModal }) {
             <div className="flex flex-col gap-1">
               <div className="flex gap-2 text-slate-400 text-sm items-center">
                 <Image className="w-4 h-4" />
-                <span>Paste image URL (from Imgur, Discord, etc.)</span>
+                <span>Share images, videos, or GIFs</span>
               </div>
               <p className="text-xs text-slate-500">
-                Upload images to <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">Imgur</a> first, then paste the link here
+                Images: <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">Imgur</a> |
+                GIFs: <a href="https://tenor.com" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline ml-1">Tenor</a> or <a href="https://giphy.com" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline ml-1">Giphy</a>
               </p>
             </div>
             <button
               type="submit"
-              disabled={!userName || isSending || (!newPost.content.trim() && !newPost.imageUrl && !newPost.videoUrl)}
+              disabled={!userName || isSending || (!newPost.content.trim() && !newPost.imageUrl && !newPost.videoUrl && !newPost.gifUrl)}
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSending ? "Posting..." : "Post"}
@@ -638,6 +651,21 @@ export default function Feed({ userName, setShowNameModal }) {
                       title="YouTube video"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
+                    />
+                  </div>
+                )}
+
+                {/* Post GIF */}
+                {post.gifUrl && (
+                  <div className="mb-3 rounded-lg overflow-hidden border border-slate-700 bg-slate-900/50">
+                    <img
+                      src={post.gifUrl}
+                      alt="GIF"
+                      className="w-full max-h-96 object-contain"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.parentElement.innerHTML = `<div class="p-4 text-center text-red-400 text-sm">Failed to load GIF</div>`;
+                      }}
                     />
                   </div>
                 )}

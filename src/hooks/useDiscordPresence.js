@@ -14,9 +14,14 @@ export function useDiscordPresence() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let loadingTimeout;
+    let unsubscribePresence;
+    let unsubscribeVoice;
+    let didCancel = false;
+
     // Set timeout to stop loading after 5 seconds
-    const loadingTimeout = setTimeout(() => {
-      if (isLoading) {
+    loadingTimeout = setTimeout(() => {
+      if (!didCancel) {
         console.warn('Discord presence loading timeout');
         setError('Connection timeout - Discord bot may be offline');
         setIsLoading(false);
@@ -26,46 +31,58 @@ export function useDiscordPresence() {
     try {
       // Listen to Discord presence data
       const presenceRef = ref(rtdb, 'discord/presence');
-      const unsubscribePresence = onValue(
+      unsubscribePresence = onValue(
         presenceRef,
         (snapshot) => {
-          const data = snapshot.val() || {};
-          setDiscordUsers(data);
-          setIsLoading(false);
-          clearTimeout(loadingTimeout);
+          if (!didCancel) {
+            const data = snapshot.val() || {};
+            setDiscordUsers(data);
+            setIsLoading(false);
+            setError(null); // Clear any previous errors
+            clearTimeout(loadingTimeout);
+          }
         },
         (err) => {
-          console.error('Discord presence error:', err);
-          setError(err.message);
-          setIsLoading(false);
-          clearTimeout(loadingTimeout);
+          if (!didCancel) {
+            console.error('Discord presence error:', err);
+            setError(err.message);
+            setIsLoading(false);
+            clearTimeout(loadingTimeout);
+          }
         }
       );
 
       // Listen to voice channel data
       const voiceRef = ref(rtdb, 'discord/voice-channels');
-      const unsubscribeVoice = onValue(
+      unsubscribeVoice = onValue(
         voiceRef,
         (snapshot) => {
-          const data = snapshot.val() || {};
-          setVoiceChannels(data);
+          if (!didCancel) {
+            const data = snapshot.val() || {};
+            setVoiceChannels(data);
+          }
         },
         (err) => {
-          console.error('Discord voice error:', err);
+          if (!didCancel) {
+            console.error('Discord voice error:', err);
+          }
         }
       );
-
-      return () => {
-        clearTimeout(loadingTimeout);
-        unsubscribePresence();
-        unsubscribeVoice();
-      };
     } catch (err) {
-      console.error('Discord hook error:', err);
-      setError(err.message);
-      setIsLoading(false);
-      clearTimeout(loadingTimeout);
+      if (!didCancel) {
+        console.error('Discord hook error:', err);
+        setError(err.message);
+        setIsLoading(false);
+        clearTimeout(loadingTimeout);
+      }
     }
+
+    return () => {
+      didCancel = true;
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      if (unsubscribePresence) unsubscribePresence();
+      if (unsubscribeVoice) unsubscribeVoice();
+    };
   }, []);
 
   // Get online Discord users count
