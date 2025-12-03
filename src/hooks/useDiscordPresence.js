@@ -19,14 +19,14 @@ export function useDiscordPresence() {
     let unsubscribeVoice;
     let didCancel = false;
 
-    // Set timeout to stop loading after 5 seconds
+    // Set timeout to stop loading after 10 seconds (increased for production)
     loadingTimeout = setTimeout(() => {
       if (!didCancel) {
-        console.warn('Discord presence loading timeout');
-        setError('Connection timeout - Discord bot may be offline');
+        console.warn('Discord presence loading timeout - bot may be offline or connection slow');
+        // Don't set error immediately, keep trying in background
         setIsLoading(false);
       }
-    }, 5000);
+    }, 10000);
 
     try {
       // Listen to Discord presence data
@@ -35,11 +35,23 @@ export function useDiscordPresence() {
         presenceRef,
         (snapshot) => {
           if (!didCancel) {
-            const data = snapshot.val() || {};
-            setDiscordUsers(data);
-            setIsLoading(false);
-            setError(null); // Clear any previous errors
             clearTimeout(loadingTimeout);
+            const data = snapshot.val();
+            
+            // If we got data (even if empty object), connection is working
+            if (data !== null) {
+              setDiscordUsers(data || {});
+              setIsLoading(false);
+              setError(null); // Clear any previous errors
+            } else {
+              // No data at all - bot might not be running
+              setDiscordUsers({});
+              setIsLoading(false);
+              // Only set error if we've never received data
+              if (Object.keys(discordUsers).length === 0) {
+                setError('No Discord data available - bot may be offline');
+              }
+            }
           }
         },
         (err) => {
