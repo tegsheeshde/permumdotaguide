@@ -32,3 +32,4 @@ dist-ssr
 discord-bot/.env
 discord-bot/node_modules
 discord-bot/firebase-service-account.json
+.vercel
