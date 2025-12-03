@@ -2,14 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/permumdotaguide/vite.svg" />
+    <link rel="icon" type="image/png" href="/icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; media-src 'self' https: http:; frame-src 'self' https://www.youtube.com https://youtube.com; connect-src 'self' https: wss:; font-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; media-src 'self' https: http:; frame-src 'self' https://www.youtube.com https://youtube.com https://app.powerbi.com; connect-src 'self' https: wss:; font-src 'self' data:;">
     <title>Permum Dota 2 Community</title>
-    <script type="module" crossorigin src="/permumdotaguide/assets/index-CtSa9veh.js"></script>
-    <link rel="stylesheet" crossorigin href="/permumdotaguide/assets/index-D6yfNdey.css">
+    <script type="module" crossorigin src="/assets/index-Ck0W1VkK.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-ButmykLP.css">
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Service Worker Registration for Push Notifications -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then((registration) => {
+              console.log('[SW] Service Worker registered successfully:', registration.scope);
+            })
+            .catch((error) => {
+              console.error('[SW] Service Worker registration failed:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
