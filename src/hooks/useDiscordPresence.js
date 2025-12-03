@@ -19,14 +19,6 @@ export function useDiscordPresence() {
     let unsubscribeVoice;
     let didCancel = false;
     let connectionAttempts = 0;
-    const MAX_ATTEMPTS = 3;
-
-    // Debug: Log database URL and connection attempt
-    console.log('[Discord Presence] Initializing connection...');
-    console.log('[Discord Presence] Database URL:', rtdb.app.options.databaseURL);
-    console.log('[Discord Presence] Project ID:', rtdb.app.options.projectId);
-    console.log('[Discord Presence] User Agent:', navigator.userAgent);
-    console.log('[Discord Presence] Browser:', /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) ? 'Safari' : 'Other');
 
     // Set timeout to stop loading after 10 seconds (increased for production)
     loadingTimeout = setTimeout(() => {

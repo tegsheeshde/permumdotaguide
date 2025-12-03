@@ -10,6 +10,7 @@ import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
 import Chat from "./components/Chat";
 import Feed from "./components/Feed";
+import { Analytics } from "@vercel/analytics/next";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'feed', or 'guide'
@@ -95,6 +96,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen relative">
+      <Analytics />
       {/* Background Image with Overlay */}
       <div
         className="fixed inset-0 z-0"
