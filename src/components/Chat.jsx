@@ -17,6 +17,7 @@ import {
 import { usePresence } from "../hooks/usePresence";
 import { sendChatToDiscord } from "../utils/discord";
 import DiscordStatus from "./DiscordStatus";
+import { setupForegroundMessageListener, showLocalNotification, areNotificationsEnabled } from "../notifications";
 
 /**
  * Chat Component - Optimized for Firebase Free Tier
@@ -63,6 +64,19 @@ export default function Chat({ userName, setShowNameModal }) {
     }
   };
 
+  // Setup notification listener
+  useEffect(() => {
+    // Setup foreground message listener for chat notifications
+    setupForegroundMessageListener((payload) => {
+      console.log('[Chat] Received notification:', payload);
+
+      // Handle different notification types
+      if (payload.data?.type === 'chat') {
+        console.log('[Chat] New chat message notification');
+      }
+    });
+  }, []);
+
   // Load messages with pagination (last 50 messages only to save reads)
   useEffect(() => {
     const messagesCollectionRef = collection(db, "chat-messages");
@@ -72,6 +86,8 @@ export default function Chat({ userName, setShowNameModal }) {
       limit(50)
     );
 
+    let previousMessageCount = 0;
+
     const unsubscribe = onSnapshot(
       messagesQuery,
       (snapshot) => {
@@ -79,8 +95,30 @@ export default function Chat({ userName, setShowNameModal }) {
           id: doc.id,
           ...doc.data(),
         }));
+
         // Reverse to show oldest first
-        setMessages(loadedMessages.reverse());
+        const reversedMessages = loadedMessages.reverse();
+
+        // Check if there's a new message (not initial load)
+        if (previousMessageCount > 0 && reversedMessages.length > previousMessageCount) {
+          const newMessage = reversedMessages[reversedMessages.length - 1]; // Latest message
+
+          // Show notification if it's not from current user and notifications are enabled
+          if (newMessage.userName !== userName && areNotificationsEnabled()) {
+            const messagePreview = newMessage.message
+              ? newMessage.message.substring(0, 50) + (newMessage.message.length > 50 ? '...' : '')
+              : 'Sent a message';
+
+            showLocalNotification(
+              `${newMessage.userName} sent a message`,
+              messagePreview,
+              { type: 'chat', messageId: newMessage.id }
+            );
+          }
+        }
+
+        previousMessageCount = reversedMessages.length;
+        setMessages(reversedMessages);
         setIsLoadingMessages(false);
         setTimeout(scrollToBottom, 100);
       },
@@ -95,7 +133,7 @@ export default function Chat({ userName, setShowNameModal }) {
 
     // Detach listener on unmount to save resources
     return () => unsubscribe();
-  }, []);
+  }, [userName]);
 
   // Send message
   const handleSendMessage = async (e) => {

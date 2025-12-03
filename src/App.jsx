@@ -10,6 +10,7 @@ import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
 import Chat from "./components/Chat";
 import Feed from "./components/Feed";
+import NotificationPrompt from "./components/NotificationPrompt";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
@@ -184,6 +185,9 @@ export default function App() {
 
         {currentPage === "guide" && <Guide />}
       </div>
+
+      {/* Notification Prompt */}
+      <NotificationPrompt />
     </div>
   );
 }

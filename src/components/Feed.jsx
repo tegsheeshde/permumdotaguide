@@ -14,6 +14,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { sendFeedPostToDiscord } from "../utils/discord";
+import { setupForegroundMessageListener, showLocalNotification, areNotificationsEnabled } from "../notifications";
 
 const REACTIONS = [
   { id: "like", icon: ThumbsUp, label: "Like", color: "text-blue-500", emoji: "👍" },
@@ -143,6 +144,20 @@ export default function Feed({ userName, setShowNameModal }) {
     setPlaceholder(getRandomPlaceholder());
   }, []);
 
+  // Setup notification listener
+  useEffect(() => {
+    // Setup foreground message listener for feed notifications
+    setupForegroundMessageListener((payload) => {
+      console.log('[Feed] Received notification:', payload);
+
+      // Handle different notification types
+      if (payload.data?.type === 'feed') {
+        // You can add custom handling here
+        console.log('[Feed] New feed post notification');
+      }
+    });
+  }, []);
+
   // Load posts from Firestore
   useEffect(() => {
     const postsCollectionRef = collection(db, "feed-posts");
@@ -152,6 +167,8 @@ export default function Feed({ userName, setShowNameModal }) {
       limit(50)
     );
 
+    let previousPostCount = 0;
+
     const unsubscribe = onSnapshot(
       postsQuery,
       (snapshot) => {
@@ -159,6 +176,26 @@ export default function Feed({ userName, setShowNameModal }) {
           id: doc.id,
           ...doc.data(),
         }));
+
+        // Check if there's a new post (not initial load)
+        if (previousPostCount > 0 && loadedPosts.length > previousPostCount) {
+          const newPost = loadedPosts[0]; // Latest post
+
+          // Show notification if it's not from current user and notifications are enabled
+          if (newPost.userName !== userName && areNotificationsEnabled()) {
+            const postPreview = newPost.content
+              ? newPost.content.substring(0, 50) + (newPost.content.length > 50 ? '...' : '')
+              : 'Posted new content';
+
+            showLocalNotification(
+              `${newPost.userName} posted in feed`,
+              postPreview,
+              { type: 'feed', postId: newPost.id }
+            );
+          }
+        }
+
+        previousPostCount = loadedPosts.length;
         setPosts(loadedPosts);
         setIsLoadingPosts(false);
       },
@@ -169,7 +206,7 @@ export default function Feed({ userName, setShowNameModal }) {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [userName]);
 
   // Create post
   const handleCreatePost = async (e) => {
