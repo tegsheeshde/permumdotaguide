@@ -12,6 +12,7 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 export default function UserProfile({ userName, scheduleData, updateSchedule, compact = false }) {
   const [showSteamIdModal, setShowSteamIdModal] = useState(false);
   const [steamIdInput, setSteamIdInput] = useState("");
+  const [mmrInput, setMmrInput] = useState("");
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   /**
@@ -38,20 +39,34 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
   };
 
   /**
-   * Get rank name from rank tier number
+   * Rank definitions with MMR ranges
    */
-  const getRankName = (rankTier) => {
-    if (!rankTier) return "Unranked";
-    const ranks = ["Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
-    const tier = Math.floor(rankTier / 10);
-    const star = rankTier % 10;
-    if (tier === 8) return `Immortal ${star > 0 ? `#${star}` : ""}`;
-    return `${ranks[tier - 1]} ${star}`;
-  };
+  const ranks = [
+    { value: "herald", label: "Herald", color: "text-gray-400", mmrMin: 0, mmrMax: 769 },
+    { value: "guardian", label: "Guardian", color: "text-green-400", mmrMin: 770, mmrMax: 1539 },
+    { value: "crusader", label: "Crusader", color: "text-yellow-400", mmrMin: 1540, mmrMax: 2309 },
+    { value: "archon", label: "Archon", color: "text-orange-400", mmrMin: 2310, mmrMax: 3079 },
+    { value: "legend", label: "Legend", color: "text-purple-400", mmrMin: 3080, mmrMax: 3849 },
+    { value: "ancient", label: "Ancient", color: "text-cyan-400", mmrMin: 3850, mmrMax: 4619 },
+    { value: "divine", label: "Divine", color: "text-blue-400", mmrMin: 4620, mmrMax: 5600 },
+    { value: "immortal", label: "Immortal", color: "text-red-400", mmrMin: 5600, mmrMax: Infinity },
+  ];
 
   /**
-   * Fetch player stats from OpenDota API
+   * Calculate rank from MMR
    */
+  const getRankFromMMR = (mmr) => {
+    if (!mmr || mmr < 0) return "Unranked";
+
+    for (const rank of ranks) {
+      if (mmr >= rank.mmrMin && mmr <= rank.mmrMax) {
+        return rank.label;
+      }
+    }
+
+    return "Unranked";
+  };
+
   const fetchPlayerStats = async (steamId) => {
     try {
       setIsLoadingStats(true);
@@ -85,24 +100,11 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
       // Get last match time
       const lastMatchTime = lastMatch ? new Date(lastMatch.start_time * 1000) : null;
 
-      // Get MMR - try multiple sources in order of preference
-      let mmr = 0;
-      if (playerData.computed_mmr) {
-        // Most reliable - OpenDota's computed MMR
-        mmr = playerData.computed_mmr;
-      } else if (playerData.mmr_estimate?.estimate) {
-        mmr = playerData.mmr_estimate.estimate;
-      } else if (playerData.solo_competitive_rank) {
-        mmr = playerData.solo_competitive_rank;
-      } else if (playerData.competitive_rank) {
-        mmr = playerData.competitive_rank;
-      }
-
       const stats = {
         steamId,
         name: playerData.profile?.personaname || userName,
         avatar: playerData.profile?.avatarfull || playerData.profile?.avatar || playerData.profile?.avatarmedium || null,
-        mmr: Math.round(mmr),
+        mmr: 0, // Will be set by user input
         rank: playerData.rank_tier || 0,
         leaderboardRank: playerData.leaderboard_rank || null,
         winRate,
@@ -129,7 +131,21 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
    * Handle saving Steam ID and updating Firebase
    */
   const handleSaveSteamId = async () => {
-    if (!userName || !steamIdInput.trim()) return;
+    if (!userName || !steamIdInput.trim()) {
+      alert("Please enter a Steam ID or profile URL.");
+      return;
+    }
+
+    if (!mmrInput.trim()) {
+      alert("Please enter your MMR.");
+      return;
+    }
+
+    const mmr = parseInt(mmrInput.trim());
+    if (isNaN(mmr) || mmr < 0) {
+      alert("Please enter a valid MMR (positive number).");
+      return;
+    }
 
     const steamId = extractSteamId(steamIdInput);
     if (!steamId) {
@@ -142,6 +158,9 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
 
     if (stats) {
       try {
+        // Override MMR with user input
+        stats.mmr = mmr;
+
         // Save to players document
         const playersRef = doc(db, "app-data", "players");
 
@@ -173,11 +192,15 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
         console.log("Player data saved successfully");
         console.log("All players:", Object.keys(updatedPlayers));
 
+        // Calculate rank from MMR
+        const calculatedRank = getRankFromMMR(stats.mmr);
+
         // Show success message
-        alert(`Profile linked successfully!\n\nName: ${stats.name}\nRank: ${getRankName(stats.rank)}\nMMR: ${Math.round(stats.mmr)}`);
+        alert(`Profile linked successfully!\n\nName: ${stats.name}\nRank: ${calculatedRank}\nMMR: ${stats.mmr}`);
 
         setShowSteamIdModal(false);
         setSteamIdInput("");
+        setMmrInput("");
       } catch (error) {
         console.error("Error saving player data:", error);
         alert("Error saving player data: " + error.message);
@@ -242,14 +265,35 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
               placeholder="Paste your profile URL or Steam ID..."
               value={steamIdInput}
               onChange={(e) => setSteamIdInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSaveSteamId();
-                }
-              }}
               className="w-full p-3 sm:p-4 bg-slate-900 text-white rounded-lg border-2 border-slate-600 focus:border-green-500 focus:outline-none mb-4 text-sm sm:text-base"
               autoFocus
             />
+
+            <div className="mb-4">
+              <label className="block text-white text-sm font-semibold mb-2">
+                Your MMR
+              </label>
+              <input
+                type="number"
+                placeholder="Enter your current MMR..."
+                value={mmrInput}
+                onChange={(e) => setMmrInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSaveSteamId();
+                  }
+                }}
+                className="w-full p-3 sm:p-4 bg-slate-900 text-white rounded-lg border-2 border-slate-600 focus:border-green-500 focus:outline-none text-sm sm:text-base"
+                min="0"
+              />
+              {mmrInput && !isNaN(parseInt(mmrInput)) && (
+                <div className="mt-2 p-2 bg-slate-900/50 rounded-lg border border-slate-700">
+                  <p className="text-sm text-slate-400">
+                    Calculated Rank: <span className="font-bold text-white">{getRankFromMMR(parseInt(mmrInput))}</span>
+                  </p>
+                </div>
+              )}
+            </div>
 
             <div className="flex gap-3">
               <button
@@ -263,6 +307,7 @@ export default function UserProfile({ userName, scheduleData, updateSchedule, co
                 onClick={() => {
                   setShowSteamIdModal(false);
                   setSteamIdInput("");
+                  setMmrInput("");
                 }}
                 className="px-6 py-3 sm:py-4 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors duration-200 text-base sm:text-lg"
               >

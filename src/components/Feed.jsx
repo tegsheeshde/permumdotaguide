@@ -532,7 +532,7 @@ export default function Feed({ userName, setShowNameModal }) {
                 type="text"
                 value={newPost.imageUrl}
                 onChange={(e) => setNewPost({ ...newPost, imageUrl: e.target.value, videoUrl: "", gifUrl: "" })}
-                placeholder="Image URL (Imgur, Discord, etc.)"
+                placeholder="Direct Image URL (i.imgur.com/image.jpg or right-click → Copy image address)"
                 disabled={!userName || isSending || newPost.videoUrl || newPost.gifUrl}
                 className="flex-1 px-4 py-2 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50 text-sm"
               />
@@ -562,7 +562,7 @@ export default function Feed({ userName, setShowNameModal }) {
                 <span>Share images, videos, or GIFs</span>
               </div>
               <p className="text-xs text-slate-500">
-                Images: <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">Imgur</a> |
+                Images: <a href="https://imgur.com/upload" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">Upload to Imgur</a> then right-click image → "Copy image address" |
                 GIFs: <a href="https://tenor.com" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline ml-1">Tenor</a> or <a href="https://giphy.com" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline ml-1">Giphy</a>
               </p>
             </div>
