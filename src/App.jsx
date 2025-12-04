@@ -9,11 +9,12 @@ import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
 import Chat from "./components/Chat";
 import Feed from "./components/Feed";
+import AIAssistant from "./components/AIAssistant";
 import NotificationPrompt from "./components/NotificationPrompt";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'feed', or 'guide'
+  const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'feed', 'guide', or 'ai'
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || ""
   );
@@ -179,6 +180,10 @@ export default function App() {
         )}
 
         {currentPage === "guide" && <Guide />}
+
+        {currentPage === "ai" && (
+          <AIAssistant userName={userName} scheduleData={scheduleData} />
+        )}
       </div>
 
       {/* Notification Prompt */}

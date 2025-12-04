@@ -13,6 +13,7 @@ import {
   MessageCircle,
   VoteIcon,
   Image,
+  Bot,
 } from "lucide-react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -61,6 +62,7 @@ export default function Header({
     { id: "home", label: "Polls & Schedule", icon: VoteIcon, color: "orange" },
     { id: "draft", label: "Draft", icon: Swords, color: "purple" },
     { id: "players", label: "Players", icon: Users, color: "cyan" },
+    { id: "ai", label: "AI Assistant", icon: Bot, color: "pink" },
     { id: "statistics", label: "Statistics", icon: BarChart3, color: "yellow" },
   ];
 
