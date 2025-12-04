@@ -2,6 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { Bot, Send, Trash2, Sparkles, Zap, User } from "lucide-react";
 import { searchPlayer, getRecentMatches, formatMatchHistory, getPlayerProfile, getPlayerWinLoss } from "../services/opendota";
 import { getCommunityStats, findPlayerStats, formatPlayerStats, formatLeaderboard, comparePlayers } from "../services/communityStats";
+import {
+  loadMatchData,
+  analyzePlayer,
+  analyzeHero,
+  getItemTimings,
+  comparePlayersDetailed,
+  getMetaHeroes,
+  getPlayerHeroStats,
+  getLeaderboard,
+  getCounterPicks,
+  formatPlayerAnalysis,
+  formatHeroAnalysis,
+  formatComparison,
+  formatMetaAnalysis,
+  formatCounterPicks
+} from "../services/matchAnalysis";
 
 /**
  * AI Assistant Component
@@ -9,33 +25,40 @@ import { getCommunityStats, findPlayerStats, formatPlayerStats, formatLeaderboar
  */
 export default function AIAssistant({ userName, scheduleData }) {
   const [communityStats, setCommunityStats] = useState(null);
+  const [matchDataLoaded, setMatchDataLoaded] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 1,
       role: "assistant",
-      content: `👋 Hey${userName ? ` ${userName}` : ''}! I'm your Dota 2 AI assistant with **LIVE DATA**!
+      content: `👋 Hey${userName ? ` ${userName}` : ''}! I'm your Dota 2 AI assistant with **ADVANCED MATCH ANALYTICS**!
 
 I can help you with:
 
-📊 **LOCAL COMMUNITY STATS** (from Power BI)
-• "El'Chapo winrate" - See YOUR community player stats
-• "Show me Tebo stats" - Full performance breakdown
-• "Community leaderboard" - Top players ranking
-• "Player1 vs Player2" - Compare two players
+📊 **PLAYER ANALYSIS** (From YOUR Data!)
+• "Analyze El'Chapo" - Deep performance breakdown
+• "El'Chapo on Puck" - Player + hero specific stats
+• "Compare El'Chapo vs sase" - Head-to-head comparison
+• "Leaderboard by KDA" - Rankings by any stat
 
-🔍 **PRO PLAYER ANALYSIS** (OpenDota)
-• "Miracle last 10 games" - See recent heroes
-• "What heroes does Arteezy play?" - Analyze hero pool
+🦸 **HERO ANALYTICS**
+• "Analyze Invoker" - Full hero meta analysis
+• "Best Puck players" - Who dominates this hero
+• "Invoker item timings" - Average item timing benchmarks
+• "What counters Ogre?" - Data-driven counter picks
 
-📅 **COMMUNITY INFO**
-• "Who's playing today?" - Check schedule
-• "What's our team MMR?" - See all players
+📈 **META INSIGHTS**
+• "Meta heroes" - Best performing heroes
+• "What's the meta?" - Current meta analysis
+• "Popular picks" - Most picked heroes
+
+🔍 **PRO PLAYER SEARCH** (OpenDota)
+• "Miracle last 10 games" - Live pro player stats
 
 🎮 **DOTA 2 TIPS**
-• "Who counters Invoker?" - Hero matchups
 • "Best carry items?" - Item builds
+• "Laning tips?" - Lane phase advice
 
-Try asking about YOUR community players! 🚀`,
+Try: "What counters Ogre?" or "Analyze El'Chapo" 🚀`,
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -47,13 +70,18 @@ Try asking about YOUR community players! 🚀`,
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Load community stats on mount
+  // Load community stats and match data on mount
   useEffect(() => {
     const loadStats = async () => {
       const stats = await getCommunityStats();
       setCommunityStats(stats);
     };
+    const loadData = async () => {
+      await loadMatchData();
+      setMatchDataLoaded(true);
+    };
     loadStats();
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -63,6 +91,200 @@ Try asking about YOUR community players! 🚀`,
   // Smart AI responses with live data fetching
   const getAIResponse = async (userMessage) => {
     const msg = userMessage.toLowerCase();
+
+    // ============================================
+    // ADVANCED MATCH DATA ANALYTICS
+    // ============================================
+
+    // Player deep analysis - "Analyze [player]" (with fallback to hero if player not found)
+    if ((msg.includes("analyze") || msg.includes("analysis") || msg.includes("breakdown")) && !msg.includes("hero") && !msg.includes("meta")) {
+      const match = userMessage.match(/(?:analyze|analysis|breakdown)\s+([a-z0-9'_\s]+)/i);
+      if (match && matchDataLoaded) {
+        const name = match[1].trim();
+
+        // Try player first
+        const playerAnalysis = analyzePlayer(name);
+        if (playerAnalysis) {
+          return formatPlayerAnalysis(playerAnalysis);
+        }
+
+        // If player not found, try hero
+        const heroAnalysis = analyzeHero(name);
+        if (heroAnalysis) {
+          return formatHeroAnalysis(heroAnalysis);
+        }
+
+        // Neither found
+        return `❌ Couldn't find "${name}" as a player or hero in the database.\n\nTry checking the spelling or ask for available players/heroes.`;
+      }
+    }
+
+    // Player + Hero specific stats - "El'Chapo on Puck" or "El'Chapo Invoker stats"
+    if ((msg.includes(" on ") || msg.includes(" with ") || (msg.includes("hero") && msg.includes("stats"))) && matchDataLoaded) {
+      const patterns = [
+        /([a-z0-9'_]+)\s+on\s+([a-z0-9\s]+)/i,
+        /([a-z0-9'_]+)\s+with\s+([a-z0-9\s]+)/i,
+        /([a-z0-9'_]+)\s+([a-z0-9\s]+)\s+stats/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = userMessage.match(pattern);
+        if (match) {
+          const playerName = match[1];
+          const heroName = match[2].trim();
+          const stats = getPlayerHeroStats(playerName, heroName);
+
+          if (stats) {
+            let response = `**${playerName}** playing **${heroName}**\n\n`;
+            response += `**📊 Performance:**\n`;
+            response += `• Games: ${stats.games} (${stats.wins}W/${stats.games - stats.wins}L)\n`;
+            response += `• Win Rate: ${stats.winRate}%\n`;
+            response += `• KDA: ${stats.totalKills}/${stats.totalDeaths}/${stats.totalAssists}\n`;
+            response += `• AVG KDA Ratio: ${stats.avgKDA}\n`;
+            response += `• AVG GPM: ${stats.avgGPM}\n\n`;
+
+            if (stats.recentMatches.length > 0) {
+              response += `**🎮 Recent Matches:**\n`;
+              stats.recentMatches.slice(0, 3).forEach((m, i) => {
+                response += `${i + 1}. ${m.w_l === 'W' ? '✅' : '❌'} ${m.kill}/${m.death}/${m.assist} - ${m.gpm} GPM\n`;
+              });
+            }
+
+            return response;
+          } else {
+            return `❌ No matches found for **${playerName}** playing **${heroName}**.`;
+          }
+        }
+      }
+    }
+
+    // Hero analysis - "Analyze Invoker" or "Invoker analysis"
+    if ((msg.includes("analyze") || msg.includes("analysis")) && msg.includes("hero") ||
+        (msg.match(/analyze\s+[a-z\s]+$/i) && !msg.includes("player"))) {
+      const heroMatch = userMessage.match(/(?:analyze|analysis)\s+(?:hero\s+)?([a-z\s]+)/i);
+      if (heroMatch && matchDataLoaded) {
+        const heroName = heroMatch[1].trim();
+        const analysis = analyzeHero(heroName);
+        if (analysis) {
+          return formatHeroAnalysis(analysis);
+        }
+      }
+    }
+
+    // Item timings - "Invoker item timings" or "Puck items"
+    if ((msg.includes("item timing") || msg.includes("item build") || (msg.includes("items") && msg.includes("when"))) && matchDataLoaded) {
+      const heroMatch = userMessage.match(/([a-z\s]+?)\s+item/i);
+      if (heroMatch) {
+        const heroName = heroMatch[1].trim();
+        const timings = getItemTimings(heroName);
+
+        if (timings && timings.length > 0) {
+          let response = `**${heroName.toUpperCase()}** - Item Timing Benchmarks\n\n`;
+          response += `📦 **Average Item Timings:**\n`;
+          timings.slice(0, 8).forEach((t, i) => {
+            response += `${i + 1}. **${t.item}** - ${t.avgTiming} (${t.samples} samples)\n`;
+          });
+          response += `\n💡 These timings are averaged from real match data!`;
+          return response;
+        } else {
+          return `❌ No item timing data found for ${heroName}.`;
+        }
+      }
+    }
+
+    // Enhanced player comparison - "Compare El'Chapo vs sase"
+    if (msg.includes("compare") && msg.includes("vs")) {
+      const compareMatch = msg.match(/compare\s+([a-z0-9'_]+)\s+vs\s+([a-z0-9'_]+)/i);
+      if (compareMatch && matchDataLoaded) {
+        const comparison = comparePlayersDetailed(compareMatch[1], compareMatch[2]);
+        if (comparison) {
+          return formatComparison(comparison);
+        }
+      }
+    }
+
+    // Leaderboard by stat - "Leaderboard by KDA" or "Top players GPM"
+    if ((msg.includes("leaderboard") || msg.includes("top players") || msg.includes("ranking")) && matchDataLoaded) {
+      let statType = 'winRate';
+      if (msg.includes("kda")) statType = 'kda';
+      else if (msg.includes("gpm") || msg.includes("farm")) statType = 'gpm';
+      else if (msg.includes("xpm") || msg.includes("experience")) statType = 'xpm';
+
+      const leaderboard = getLeaderboard(statType, 10);
+      if (leaderboard) {
+        let response = `**🏆 Leaderboard - ${statType.toUpperCase()}** (10+ games)\n\n`;
+        leaderboard.forEach((p, i) => {
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+          const value = statType === 'winRate' ? `${p.win_rate}%` :
+                       statType === 'kda' ? p.kda_ratio :
+                       statType === 'gpm' ? `${p.avg_gpm.toFixed(0)}` :
+                       `${p.avg_xpm.toFixed(0)}`;
+          response += `${medal} **${p.player_name}** - ${value}\n`;
+        });
+        return response;
+      }
+    }
+
+    // Meta analysis - "Meta heroes" or "What's the meta"
+    if ((msg.includes("meta") && !msg.includes("analyze")) || msg.includes("best hero") || msg.includes("popular pick")) {
+      if (matchDataLoaded) {
+        const meta = getMetaHeroes();
+        if (meta) {
+          return formatMetaAnalysis(meta);
+        }
+      }
+    }
+
+    // Best players on a hero - "Best Puck players" or "Who plays Invoker best"
+    if ((msg.includes("best") && msg.includes("player")) || msg.includes("who plays")) {
+      const heroMatch = userMessage.match(/(?:best|who plays?)\s+(?:the\s+)?([a-z\s]+?)\s+(?:player|best)/i);
+      if (heroMatch && matchDataLoaded) {
+        const heroName = heroMatch[1].trim();
+        const analysis = analyzeHero(heroName);
+        if (analysis && analysis.bestPlayers.length > 0) {
+          let response = `**Best ${heroName.toUpperCase()} Players:**\n\n`;
+          analysis.bestPlayers.forEach((p, i) => {
+            response += `${i + 1}. **${p.player}** - ${p.winRate}% WR (${p.games} games, ${p.avgKDA} KDA)\n`;
+          });
+          return response;
+        }
+      }
+    }
+
+    // Counter picks - "What counters Ogre?" or "Invoker counters" or "Counter to Puck"
+    if ((msg.includes("counter") || msg.includes("counters")) && matchDataLoaded) {
+      // Multiple patterns to catch different phrasings
+      const patterns = [
+        /what\s+(?:hero\s+)?counters?\s+([a-z\s]+?)(?:\?|$)/i,
+        /([a-z\s]+?)\s+counters?(?:\?|$)/i,
+        /counter\s+(?:to|for|pick)\s+([a-z\s]+?)(?:\?|$)/i,
+        /counters?\s+(?:to|for|against)\s+([a-z\s]+?)(?:\?|$)/i,
+        /who\s+counters?\s+([a-z\s]+?)(?:\?|$)/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = userMessage.match(pattern);
+        if (match) {
+          const heroName = match[1].trim();
+
+          // Skip if it's clearly asking about general counters advice (existing feature)
+          if (heroName.includes('invoker') && msg.includes('nyx')) {
+            break; // Let it fall through to existing counter tips
+          }
+
+          const counterData = getCounterPicks(heroName);
+          if (counterData) {
+            return formatCounterPicks(counterData);
+          } else {
+            return `❌ Couldn't find "${heroName}" in the match database.\n\nTry checking the spelling or use hero names from your data.`;
+          }
+        }
+      }
+    }
+
+    // ============================================
+    // EXISTING FEATURES (OpenDota, Community Stats, Tips)
+    // ============================================
 
     // Player match history queries - NEW FEATURE!
     // Examples: "Tebo last 10 games", "What heroes does Miracle play?", "Show me Arteezy matches"
@@ -339,10 +561,10 @@ Try asking about YOUR community players! 🚀`,
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-          { icon: Sparkles, text: "Player Search", query: "Miracle last 10 games" },
-          { icon: Zap, text: "Counter picks", query: "Who counters Invoker?" },
-          { icon: Bot, text: "Item builds", query: "Best carry items?" },
-          { icon: User, text: "Who's online?", query: "Who's playing today?" },
+          { icon: Sparkles, text: "Analyze Player", query: "Analyze El'Chapo" },
+          { icon: Zap, text: "Counter Picks", query: "What counters Ogre?" },
+          { icon: Bot, text: "Hero Analysis", query: "Analyze Invoker" },
+          { icon: User, text: "Meta Heroes", query: "Meta heroes" },
         ].map((action, idx) => (
           <button
             key={idx}

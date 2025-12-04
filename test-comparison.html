@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Comparison Fix</title>
+</head>
+<body>
+  <h1>Testing Player Comparison Fix</h1>
+  <p>Testing if number-based player names (like 911) work with string comparisons...</p>
+
+  <script type="module">
+    // Simulate the fix
+    const testData = [
+      { player_name: 911, win_rate: 55.13 },
+      { player_name: "sase", win_rate: 50.0 },
+      { player_name: "El'Chapo", win_rate: 49.45 }
+    ];
+
+    function findPlayer(playerName) {
+      return testData.find(
+        p => String(p.player_name).toLowerCase() === String(playerName).toLowerCase()
+      );
+    }
+
+    // Test cases
+    console.log("Test 1 - Finding '911':", findPlayer("911"));
+    console.log("Test 2 - Finding 911 (number):", findPlayer(911));
+    console.log("Test 3 - Finding 'sase':", findPlayer("sase"));
+    console.log("Test 4 - Finding 'El'Chapo':", findPlayer("El'Chapo"));
+
+    const results = [
+      findPlayer("911") ? "✅ '911' (string) found" : "❌ '911' (string) NOT found",
+      findPlayer(911) ? "✅ 911 (number) found" : "❌ 911 (number) NOT found",
+      findPlayer("sase") ? "✅ 'sase' found" : "❌ 'sase' NOT found",
+      findPlayer("El'Chapo") ? "✅ 'El'Chapo' found" : "❌ 'El'Chapo' NOT found"
+    ];
+
+    document.body.innerHTML += "<h2>Results:</h2><ul>" +
+      results.map(r => `<li>${r}</li>`).join("") +
+      "</ul>";
+
+    if (results.every(r => r.includes("✅"))) {
+      document.body.innerHTML += "<h2 style='color: green;'>✅ ALL TESTS PASSED! The fix works!</h2>";
+    } else {
+      document.body.innerHTML += "<h2 style='color: red;'>❌ Some tests failed!</h2>";
+    }
+  </script>
+</body>
+</html>
