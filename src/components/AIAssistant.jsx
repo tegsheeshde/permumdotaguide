@@ -34,7 +34,7 @@ export default function AIAssistant({ userName, scheduleData }) {
 
 I can help you with:
 
-📊 **PLAYER ANALYSIS** (From YOUR Data!)
+📊 **PLAYER ANALYSIS** (From Permum Data)
 • "Analyze El'Chapo" - Deep performance breakdown
 • "El'Chapo on Puck" - Player + hero specific stats
 • "Compare El'Chapo vs sase" - Head-to-head comparison
@@ -58,7 +58,7 @@ I can help you with:
 • "Best carry items?" - Item builds
 • "Laning tips?" - Lane phase advice
 
-Try: "What counters Ogre?" or "Analyze El'Chapo" 🚀`,
+Try: "What counters Ogre?" or "Analyze Player" 🚀`,
       timestamp: new Date().toISOString(),
     },
   ]);
