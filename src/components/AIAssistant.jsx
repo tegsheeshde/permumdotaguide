@@ -1,35 +1,41 @@
 import { useState, useEffect, useRef } from "react";
 import { Bot, Send, Trash2, Sparkles, Zap, User } from "lucide-react";
 import { searchPlayer, getRecentMatches, formatMatchHistory, getPlayerProfile, getPlayerWinLoss } from "../services/opendota";
+import { getCommunityStats, findPlayerStats, formatPlayerStats, formatLeaderboard, comparePlayers } from "../services/communityStats";
 
 /**
  * AI Assistant Component
  * Provides Dota 2 tips, strategy advice, and community help
  */
 export default function AIAssistant({ userName, scheduleData }) {
+  const [communityStats, setCommunityStats] = useState(null);
   const [messages, setMessages] = useState([
     {
       id: 1,
       role: "assistant",
-      content: `👋 Hey${userName ? ` ${userName}` : ''}! I'm your Dota 2 AI assistant with **LIVE DATA** from OpenDota!
+      content: `👋 Hey${userName ? ` ${userName}` : ''}! I'm your Dota 2 AI assistant with **LIVE DATA**!
 
 I can help you with:
 
-🔍 **Player Analysis (NEW!)**
-• "Tebo last 10 games" - See recent heroes & performance
-• "What heroes does Miracle play?" - Analyze hero pool
-• "Show me Arteezy matches" - Match history
+📊 **LOCAL COMMUNITY STATS** (from Power BI)
+• "El'Chapo winrate" - See YOUR community player stats
+• "Show me Tebo stats" - Full performance breakdown
+• "Community leaderboard" - Top players ranking
+• "Player1 vs Player2" - Compare two players
 
-📊 **Community Info**
+🔍 **PRO PLAYER ANALYSIS** (OpenDota)
+• "Miracle last 10 games" - See recent heroes
+• "What heroes does Arteezy play?" - Analyze hero pool
+
+📅 **COMMUNITY INFO**
 • "Who's playing today?" - Check schedule
 • "What's our team MMR?" - See all players
 
-🎮 **Dota 2 Tips**
+🎮 **DOTA 2 TIPS**
 • "Who counters Invoker?" - Hero matchups
 • "Best carry items?" - Item builds
-• "How to climb MMR?" - Strategy tips
 
-Try asking about any pro player or your friends! 🚀`,
+Try asking about YOUR community players! 🚀`,
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -40,6 +46,15 @@ Try asking about any pro player or your friends! 🚀`,
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Load community stats on mount
+  useEffect(() => {
+    const loadStats = async () => {
+      const stats = await getCommunityStats();
+      setCommunityStats(stats);
+    };
+    loadStats();
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -115,6 +130,50 @@ Try asking about any pro player or your friends! 🚀`,
           console.error('Error fetching player data:', error);
           return `❌ Error fetching data for "${playerName}". Try again or check the name.`;
         }
+      }
+    }
+
+    // Community stats queries - NEW FEATURE!
+    // Examples: "El'Chapo winrate", "Show me Tebo stats", "Community leaderboard"
+    if (msg.includes("winrate") || msg.includes("win rate") || msg.includes("stats") || msg.includes("performance")) {
+      // Extract player name
+      const playerNameMatch = msg.match(/(?:show (?:me\s+)?)?([a-z0-9'_]+)(?:'s)?/i);
+
+      if (playerNameMatch && playerNameMatch[1] && !msg.includes("our") && !msg.includes("team")) {
+        const playerName = playerNameMatch[1];
+
+        if (communityStats) {
+          const playerStats = findPlayerStats(communityStats, playerName);
+
+          if (playerStats) {
+            return formatPlayerStats(playerStats);
+          } else {
+            return `❌ Couldn't find "${playerName}" in our community stats.\n\nAvailable players: ${Object.keys(communityStats.players || {}).join(", ")}\n\nTry checking the spelling or ask for the leaderboard!`;
+          }
+        } else {
+          return `⚠️ Community stats not loaded yet. Please contact admin to set up the stats database.`;
+        }
+      }
+    }
+
+    // Leaderboard queries
+    if (msg.includes("leaderboard") || msg.includes("top players") || msg.includes("rankings")) {
+      if (communityStats) {
+        return formatLeaderboard(communityStats);
+      } else {
+        return `⚠️ Community stats not available yet.`;
+      }
+    }
+
+    // Player comparison
+    if (msg.includes("vs") || msg.includes("compare")) {
+      const vsMatch = msg.match(/([a-z0-9'_]+)\s+vs\s+([a-z0-9'_]+)/i);
+      const compareMatch = msg.match(/compare\s+([a-z0-9'_]+)\s+(?:and|&|with)\s+([a-z0-9'_]+)/i);
+
+      const match = vsMatch || compareMatch;
+
+      if (match && communityStats) {
+        return comparePlayers(communityStats, match[1], match[2]);
       }
     }
 
