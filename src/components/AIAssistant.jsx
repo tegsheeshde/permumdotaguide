@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Bot, Send, Trash2, Sparkles, Zap, User } from "lucide-react";
+import { searchPlayer, getRecentMatches, formatMatchHistory, getPlayerProfile, getPlayerWinLoss } from "../services/opendota";
 
 /**
  * AI Assistant Component
@@ -10,15 +11,25 @@ export default function AIAssistant({ userName, scheduleData }) {
     {
       id: 1,
       role: "assistant",
-      content: `👋 Hey${userName ? ` ${userName}` : ''}! I'm your Dota 2 AI assistant. I can help you with:
+      content: `👋 Hey${userName ? ` ${userName}` : ''}! I'm your Dota 2 AI assistant with **LIVE DATA** from OpenDota!
 
-• **Hero picks & counters** - "Who counters Invoker?"
-• **Item builds** - "Best items for carry Snapfire?"
-• **Strategy tips** - "How to win mid lane?"
-• **Community info** - "Who's playing today?"
-• **Draft advice** - "Good pos 5 supports?"
+I can help you with:
 
-What do you want to know?`,
+🔍 **Player Analysis (NEW!)**
+• "Tebo last 10 games" - See recent heroes & performance
+• "What heroes does Miracle play?" - Analyze hero pool
+• "Show me Arteezy matches" - Match history
+
+📊 **Community Info**
+• "Who's playing today?" - Check schedule
+• "What's our team MMR?" - See all players
+
+🎮 **Dota 2 Tips**
+• "Who counters Invoker?" - Hero matchups
+• "Best carry items?" - Item builds
+• "How to climb MMR?" - Strategy tips
+
+Try asking about any pro player or your friends! 🚀`,
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -34,9 +45,78 @@ What do you want to know?`,
     scrollToBottom();
   }, [messages]);
 
-  // Predefined responses for common Dota 2 questions
-  const getAIResponse = (userMessage) => {
+  // Smart AI responses with live data fetching
+  const getAIResponse = async (userMessage) => {
     const msg = userMessage.toLowerCase();
+
+    // Player match history queries - NEW FEATURE!
+    // Examples: "Tebo last 10 games", "What heroes does Miracle play?", "Show me Arteezy matches"
+    const playerQueryMatch = msg.match(/(?:what (?:heroes|hero) (?:does|did|do)|last \d+ games?|recent (?:games?|matches?)|show (?:me )?(?:matches?|games?)).*?([a-z0-9_]+)/i);
+
+    if (playerQueryMatch || msg.includes("games") || msg.includes("playing") && !msg.includes("who's")) {
+      // Extract player name from various question formats
+      let playerName = null;
+
+      // Try different patterns
+      const patterns = [
+        /(?:what (?:heroes|hero) (?:does|do|did))?\s*([a-z0-9_]+)\s*(?:play|playing|last|recent)/i,
+        /last \d+ games?\s+(?:of\s+)?([a-z0-9_]+)/i,
+        /([a-z0-9_]+)\s+last \d+ games?/i,
+        /show (?:me\s+)?(?:matches?|games?)\s+(?:of\s+|for\s+)?([a-z0-9_]+)/i,
+      ];
+
+      for (const pattern of patterns) {
+        const match = userMessage.match(pattern);
+        if (match && match[1]) {
+          playerName = match[1];
+          break;
+        }
+      }
+
+      if (playerName) {
+        try {
+          // Search for player
+          const players = await searchPlayer(playerName);
+
+          if (players.length === 0) {
+            return `❌ Couldn't find player "${playerName}".\n\nTry:\n• Full Steam name\n• Check spelling\n• OpenDota profile URL`;
+          }
+
+          const player = players[0]; // Get best match
+          const accountId = player.account_id;
+
+          // Fetch recent matches
+          const matches = await getRecentMatches(accountId, 10);
+
+          if (matches.length === 0) {
+            return `Found **${player.personaname}** but no recent matches available.`;
+          }
+
+          // Get player profile for additional info
+          const profile = await getPlayerProfile(accountId);
+          const wl = await getPlayerWinLoss(accountId);
+
+          // Format response
+          let response = `**${player.personaname || playerName}**\n`;
+          response += `🔗 [OpenDota Profile](https://www.opendota.com/players/${accountId})\n\n`;
+
+          if (profile) {
+            const mmr = profile.mmr_estimate?.estimate || profile.solo_competitive_rank || profile.competitive_rank || 'Unknown';
+            response += `**MMR:** ${mmr}\n`;
+            response += `**Total Games:** ${wl.win + wl.lose} (${wl.win}W/${wl.lose}L)\n`;
+            response += `**Win Rate:** ${((wl.win / (wl.win + wl.lose)) * 100).toFixed(1)}%\n\n`;
+          }
+
+          // Add match history analysis
+          response += formatMatchHistory(matches);
+
+          return response;
+        } catch (error) {
+          console.error('Error fetching player data:', error);
+          return `❌ Error fetching data for "${playerName}". Try again or check the name.`;
+        }
+      }
+    }
 
     // Community-related questions
     if (msg.includes("playing today") || msg.includes("who's online") || msg.includes("available")) {
@@ -110,14 +190,16 @@ What do you want to know?`,
     return `🤔 Interesting question! Here are some things I can help with:\n\n• **Hero questions**: "Who counters [hero]?", "Best [hero] build?"\n• **Strategy**: "How to win mid?", "Draft tips?"\n• **Community**: "Who's playing today?", "What's our team MMR?"\n• **Tips**: "Laning tips?", "How to climb MMR?"\n\nTry asking about a specific hero or game mechanic! 🎮`;
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+
+    const userInput = input;
 
     // Add user message
     const userMessage = {
       id: Date.now(),
       role: "user",
-      content: input,
+      content: userInput,
       timestamp: new Date().toISOString(),
     };
 
@@ -125,18 +207,32 @@ What do you want to know?`,
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI thinking
-    setTimeout(() => {
+    // Get AI response (may fetch live data)
+    try {
+      const responseContent = await getAIResponse(userInput);
+
       const aiResponse = {
         id: Date.now() + 1,
         role: "assistant",
-        content: getAIResponse(input),
+        content: responseContent,
         timestamp: new Date().toISOString(),
       };
 
       setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+
+      const errorResponse = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: "❌ Oops! Something went wrong. Please try again.",
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleClear = () => {
@@ -184,9 +280,9 @@ What do you want to know?`,
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
+          { icon: Sparkles, text: "Player Search", query: "Miracle last 10 games" },
           { icon: Zap, text: "Counter picks", query: "Who counters Invoker?" },
-          { icon: Sparkles, text: "Item builds", query: "Best carry items?" },
-          { icon: Bot, text: "Draft tips", query: "Draft advice?" },
+          { icon: Bot, text: "Item builds", query: "Best carry items?" },
           { icon: User, text: "Who's online?", query: "Who's playing today?" },
         ].map((action, idx) => (
           <button
