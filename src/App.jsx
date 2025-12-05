@@ -11,6 +11,7 @@ import Chat from "./components/Chat";
 import Feed from "./components/Feed";
 import AIAssistant from "./components/AIAssistant";
 import NotificationPrompt from "./components/NotificationPrompt";
+import VersionChecker from "./components/VersionChecker";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
@@ -188,6 +189,9 @@ export default function App() {
 
       {/* Notification Prompt */}
       <NotificationPrompt />
+
+      {/* Version Checker - Auto-update notification */}
+      <VersionChecker />
     </div>
   );
 }
