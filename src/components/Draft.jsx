@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Swords, Users, Trash2, RotateCcw, UserPlus, Award, Download, MessageCircle, X as XIcon } from "lucide-react";
+import { Swords, Users, Trash2, RotateCcw, UserPlus, Award, Download, MessageCircle, X as XIcon, Wand2, ChevronRight } from "lucide-react";
 import { db } from "../firebase";
 import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import * as htmlToImage from 'html-to-image';
 import Chat from "./Chat";
+import { generateAutoDrafts } from "../services/autoDraft";
 
 export default function Draft() {
   // Draft Picker State
@@ -29,6 +30,11 @@ export default function Draft() {
   // Registered players state
   const [registeredPlayers, setRegisteredPlayers] = useState({});
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(true);
+
+  // Auto-draft state
+  const [showAutoDraft, setShowAutoDraft] = useState(false);
+  const [autoDraftOptions, setAutoDraftOptions] = useState([]);
+  const [isGeneratingDrafts, setIsGeneratingDrafts] = useState(false);
 
   // Ref for capturing the draft area
   const draftAreaRef = useRef(null);
@@ -221,6 +227,71 @@ export default function Draft() {
     return draft?.pickNumber;
   };
 
+  // Generate auto-draft options
+  const handleGenerateAutoDrafts = async () => {
+    setIsGeneratingDrafts(true);
+    setShowAutoDraft(true);
+
+    try {
+      // Get all available players (registered + manual)
+      const allPlayers = [
+        ...Object.keys(registeredPlayers),
+        ...draftData.availablePlayers.filter(p => !registeredPlayers[p])
+      ];
+
+      if (allPlayers.length < 10) {
+        alert(`Need at least 10 players to generate drafts. Currently have ${allPlayers.length} players.`);
+        setIsGeneratingDrafts(false);
+        return;
+      }
+
+      const drafts = await generateAutoDrafts(allPlayers, registeredPlayers);
+
+      if (drafts) {
+        setAutoDraftOptions(drafts);
+      } else {
+        alert('Failed to generate drafts. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating drafts:', error);
+      alert('Failed to generate drafts. Check console for details.');
+    } finally {
+      setIsGeneratingDrafts(false);
+    }
+  };
+
+  // Apply a selected auto-draft
+  const applyAutoDraft = (draftOption) => {
+    const updates = {
+      captain1: draftOption.team1.captain,
+      captain2: draftOption.team2.captain,
+      team1: draftOption.team1.players,
+      team2: draftOption.team2.players,
+      draftOrder: [
+        // Team 1 captain
+        { playerName: draftOption.team1.captain, team: 'team1', pickNumber: 1 },
+        // Team 2 captain
+        { playerName: draftOption.team2.captain, team: 'team2', pickNumber: 2 },
+        // Team 1 players
+        ...draftOption.team1.players.map((p, idx) => ({
+          playerName: p,
+          team: 'team1',
+          pickNumber: 3 + idx * 2
+        })),
+        // Team 2 players
+        ...draftOption.team2.players.map((p, idx) => ({
+          playerName: p,
+          team: 'team2',
+          pickNumber: 4 + idx * 2
+        }))
+      ]
+    };
+
+    updateDraft(updates);
+    setShowAutoDraft(false);
+    setAutoDraftOptions([]);
+  };
+
   // Download draft as image
   const handleDownloadDraft = async () => {
     if (!draftAreaRef.current) return;
@@ -261,14 +332,24 @@ export default function Draft() {
               <p className="text-slate-400 text-sm">Pick captains and draft your teams</p>
             </div>
           </div>
-          <button
-            onClick={handleDownloadDraft}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
-            title="Download draft as image"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Download</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleGenerateAutoDrafts}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all text-sm font-medium shadow-lg"
+              title="AI-powered auto draft"
+            >
+              <Wand2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Auto Draft</span>
+            </button>
+            <button
+              onClick={handleDownloadDraft}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
+              title="Download draft as image"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Download</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -867,6 +948,155 @@ export default function Draft() {
             >
               Continue
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auto Draft Modal */}
+      {showAutoDraft && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-6xl w-full border-2 border-purple-500/50 shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Wand2 className="w-6 h-6 text-purple-400" />
+                <div>
+                  <h2 className="text-2xl font-bold text-white">AI Auto Draft</h2>
+                  <p className="text-slate-400 text-sm">Choose from 5 balanced team compositions</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAutoDraft(false);
+                  setAutoDraftOptions([]);
+                }}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white"
+              >
+                <XIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Loading State */}
+            {isGeneratingDrafts && (
+              <div className="text-center py-12">
+                <div className="inline-block w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-white font-medium text-lg">Analyzing player stats...</p>
+                <p className="text-slate-400 text-sm mt-2">Creating balanced team compositions</p>
+              </div>
+            )}
+
+            {/* Draft Options */}
+            {!isGeneratingDrafts && autoDraftOptions.length > 0 && (
+              <div className="space-y-4">
+                {autoDraftOptions.map((draft, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-slate-900/50 rounded-xl p-4 border-2 border-slate-700 hover:border-purple-500/50 transition-all"
+                  >
+                    {/* Draft Info */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                          {draft.name}
+                          {idx === 3 && <span className="text-xs px-2 py-1 bg-purple-600/30 text-purple-300 border border-purple-500/50 rounded">Recommended</span>}
+                        </h3>
+                        <p className="text-slate-400 text-sm">{draft.description}</p>
+                      </div>
+                      <button
+                        onClick={() => applyAutoDraft(draft)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all font-medium shadow-lg"
+                      >
+                        Apply Draft
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Teams Preview */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Radiant */}
+                      <div className="bg-green-900/20 rounded-lg p-3 border border-green-500/30">
+                        <div className="text-green-400 font-semibold text-sm mb-2 flex items-center justify-between">
+                          <span>Radiant</span>
+                          <span className="text-xs text-green-300">
+                            {draft.team1.totalMMR?.toLocaleString() || 0} MMR
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-white text-sm">
+                            <Award className="w-3 h-3 text-yellow-400" />
+                            <span className="font-medium">{draft.team1.captain}</span>
+                            <span className="text-xs text-slate-400">
+                              {registeredPlayers[draft.team1.captain]?.mmr?.toLocaleString() || 0}
+                            </span>
+                          </div>
+                          {draft.team1.players.map((player, pidx) => (
+                            <div key={pidx} className="flex items-center justify-between text-white text-sm pl-5">
+                              <span>{player}</span>
+                              <span className="text-xs text-slate-400">
+                                {registeredPlayers[player]?.mmr?.toLocaleString() || 0}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dire */}
+                      <div className="bg-red-900/20 rounded-lg p-3 border border-red-500/30">
+                        <div className="text-red-400 font-semibold text-sm mb-2 flex items-center justify-between">
+                          <span>Dire</span>
+                          <span className="text-xs text-red-300">
+                            {draft.team2.totalMMR?.toLocaleString() || 0} MMR
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-white text-sm">
+                            <Award className="w-3 h-3 text-yellow-400" />
+                            <span className="font-medium">{draft.team2.captain}</span>
+                            <span className="text-xs text-slate-400">
+                              {registeredPlayers[draft.team2.captain]?.mmr?.toLocaleString() || 0}
+                            </span>
+                          </div>
+                          {draft.team2.players.map((player, pidx) => (
+                            <div key={pidx} className="flex items-center justify-between text-white text-sm pl-5">
+                              <span>{player}</span>
+                              <span className="text-xs text-slate-400">
+                                {registeredPlayers[player]?.mmr?.toLocaleString() || 0}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Balance Stats */}
+                    <div className="mt-3 flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400">MMR Diff:</span>
+                        <span className="text-purple-300 font-semibold">{draft.balance.mmrDiff?.toLocaleString() || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400">Fairness:</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+                              style={{ width: `${draft.balance.fairness}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-purple-300 font-semibold">{draft.balance.fairness}%</span>
+                        </div>
+                      </div>
+                      {draft.balance.skillDiff && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">Skill Diff:</span>
+                          <span className="text-purple-300 font-semibold">{draft.balance.skillDiff}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

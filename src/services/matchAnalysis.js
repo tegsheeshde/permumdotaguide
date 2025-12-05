@@ -588,3 +588,273 @@ export function formatCounterPicks(counterData) {
 
   return response;
 }
+
+/**
+ * Find best teammates for a player
+ * Analyzes which players perform best when on the same team
+ */
+export function getBestTeammates(playerName) {
+  if (!matchData) return null;
+
+  // Get all matches for the target player
+  const playerMatches = matchData.matches.filter(
+    m => String(m.player_name).toLowerCase() === String(playerName).toLowerCase()
+  );
+
+  if (playerMatches.length === 0) return null;
+
+  // Analyze teammates performance
+  const teammatePerformance = {};
+
+  playerMatches.forEach(match => {
+    const playerTeam = match.team;
+    const matchResult = match.w_l;
+
+    // Find teammates in the same game
+    const teammates = matchData.matches.filter(
+      m => m.game_id === match.game_id &&
+           m.team === playerTeam &&
+           String(m.player_name).toLowerCase() !== String(playerName).toLowerCase()
+    );
+
+    teammates.forEach(teammate => {
+      const teammateName = String(teammate.player_name);
+
+      if (!teammatePerformance[teammateName]) {
+        teammatePerformance[teammateName] = {
+          gamesTogether: 0,
+          winsTogether: 0,
+          totalKDA: 0
+        };
+      }
+
+      const data = teammatePerformance[teammateName];
+      data.gamesTogether++;
+      if (matchResult === 'W') {
+        data.winsTogether++;
+      }
+
+      // Calculate teammate's KDA in this match
+      const kda = (teammate.kill + teammate.assist) / Math.max(teammate.death, 1);
+      data.totalKDA += kda;
+    });
+  });
+
+  // Calculate stats and sort by win rate
+  const teammates = Object.entries(teammatePerformance)
+    .map(([name, data]) => ({
+      name,
+      gamesTogether: data.gamesTogether,
+      winsTogether: data.winsTogether,
+      winRate: (data.winsTogether / data.gamesTogether * 100).toFixed(1),
+      avgKDA: (data.totalKDA / data.gamesTogether).toFixed(2)
+    }))
+    .filter(t => t.gamesTogether >= 3) // Minimum 3 games for reliability
+    .sort((a, b) => parseFloat(b.winRate) - parseFloat(a.winRate));
+
+  return {
+    playerName,
+    totalMatches: playerMatches.length,
+    teammates
+  };
+}
+
+/**
+ * Find worst teammates for a player
+ */
+export function getWorstTeammates(playerName) {
+  const data = getBestTeammates(playerName);
+  if (!data) return null;
+
+  // Reverse sort to get worst performing teammates
+  const worstTeammates = [...data.teammates]
+    .sort((a, b) => parseFloat(a.winRate) - parseFloat(b.winRate));
+
+  return {
+    playerName: data.playerName,
+    totalMatches: data.totalMatches,
+    teammates: worstTeammates
+  };
+}
+
+/**
+ * Find best matchups for a player (enemy players they perform well against)
+ */
+export function getBestMatchups(playerName) {
+  if (!matchData) return null;
+
+  // Get all matches for the target player
+  const playerMatches = matchData.matches.filter(
+    m => String(m.player_name).toLowerCase() === String(playerName).toLowerCase()
+  );
+
+  if (playerMatches.length === 0) return null;
+
+  // Analyze enemy player performance
+  const enemyPerformance = {};
+
+  playerMatches.forEach(match => {
+    const playerTeam = match.team;
+    const matchResult = match.w_l;
+
+    // Find enemies in the same game
+    const enemies = matchData.matches.filter(
+      m => m.game_id === match.game_id &&
+           m.team !== playerTeam
+    );
+
+    enemies.forEach(enemy => {
+      const enemyName = String(enemy.player_name);
+
+      if (!enemyPerformance[enemyName]) {
+        enemyPerformance[enemyName] = {
+          gamesAgainst: 0,
+          winsAgainst: 0,
+          totalKDA: 0 // Player's KDA when facing this enemy
+        };
+      }
+
+      const data = enemyPerformance[enemyName];
+      data.gamesAgainst++;
+      if (matchResult === 'W') {
+        data.winsAgainst++;
+      }
+
+      // Player's KDA in this match (not enemy's)
+      const kda = (match.kill + match.assist) / Math.max(match.death, 1);
+      data.totalKDA += kda;
+    });
+  });
+
+  // Calculate stats and sort by win rate
+  const matchups = Object.entries(enemyPerformance)
+    .map(([name, data]) => ({
+      name,
+      gamesAgainst: data.gamesAgainst,
+      winsAgainst: data.winsAgainst,
+      winRate: (data.winsAgainst / data.gamesAgainst * 100).toFixed(1),
+      avgKDA: (data.totalKDA / data.gamesAgainst).toFixed(2)
+    }))
+    .filter(m => m.gamesAgainst >= 3) // Minimum 3 games for reliability
+    .sort((a, b) => parseFloat(b.winRate) - parseFloat(a.winRate));
+
+  return {
+    playerName,
+    totalMatches: playerMatches.length,
+    matchups
+  };
+}
+
+/**
+ * Find worst matchups for a player (enemy players they struggle against)
+ */
+export function getWorstMatchups(playerName) {
+  const data = getBestMatchups(playerName);
+  if (!data) return null;
+
+  // Reverse sort to get worst performing matchups
+  const worstMatchups = [...data.matchups]
+    .sort((a, b) => parseFloat(a.winRate) - parseFloat(b.winRate));
+
+  return {
+    playerName: data.playerName,
+    totalMatches: data.totalMatches,
+    matchups: worstMatchups
+  };
+}
+
+/**
+ * Format best teammates response
+ */
+export function formatBestTeammates(data) {
+  if (!data) return "Player not found in match database.";
+
+  const { playerName, totalMatches, teammates } = data;
+
+  let response = `**🤝 Best Teammates for ${playerName}**\n`;
+  response += `📊 Analysis based on ${totalMatches} matches\n\n`;
+
+  if (teammates.length > 0) {
+    response += `**🌟 Top Performing Teammates:**\n`;
+    teammates.slice(0, 5).forEach((t, i) => {
+      response += `${i + 1}. **${t.name}** - ${t.winRate}% WR together (${t.gamesTogether} games, ${t.avgKDA} avg KDA)\n`;
+    });
+  } else {
+    response += `⚠️ Not enough data to determine teammates.\n`;
+    response += `Need at least 3 games together with each teammate.\n`;
+  }
+
+  return response;
+}
+
+/**
+ * Format worst teammates response
+ */
+export function formatWorstTeammates(data) {
+  if (!data) return "Player not found in match database.";
+
+  const { playerName, totalMatches, teammates } = data;
+
+  let response = `**💔 Worst Teammates for ${playerName}**\n`;
+  response += `📊 Analysis based on ${totalMatches} matches\n\n`;
+
+  if (teammates.length > 0) {
+    response += `**⚠️ Struggling Combinations:**\n`;
+    teammates.slice(0, 5).forEach((t, i) => {
+      response += `${i + 1}. **${t.name}** - ${t.winRate}% WR together (${t.gamesTogether} games, ${t.avgKDA} avg KDA)\n`;
+    });
+  } else {
+    response += `⚠️ Not enough data to determine teammates.\n`;
+    response += `Need at least 3 games together with each teammate.\n`;
+  }
+
+  return response;
+}
+
+/**
+ * Format best matchups response
+ */
+export function formatBestMatchups(data) {
+  if (!data) return "Player not found in match database.";
+
+  const { playerName, totalMatches, matchups } = data;
+
+  let response = `**⚔️ Best Matchups for ${playerName}**\n`;
+  response += `📊 Analysis based on ${totalMatches} matches\n\n`;
+
+  if (matchups.length > 0) {
+    response += `**🎯 Dominant Against:**\n`;
+    matchups.slice(0, 5).forEach((m, i) => {
+      response += `${i + 1}. **${m.name}** - ${m.winRate}% WR vs them (${m.gamesAgainst} games, ${m.avgKDA} avg KDA)\n`;
+    });
+  } else {
+    response += `⚠️ Not enough data to determine matchups.\n`;
+    response += `Need at least 3 games against each opponent.\n`;
+  }
+
+  return response;
+}
+
+/**
+ * Format worst matchups response
+ */
+export function formatWorstMatchups(data) {
+  if (!data) return "Player not found in match database.";
+
+  const { playerName, totalMatches, matchups } = data;
+
+  let response = `**😰 Worst Matchups for ${playerName}**\n`;
+  response += `📊 Analysis based on ${totalMatches} matches\n\n`;
+
+  if (matchups.length > 0) {
+    response += `**🛑 Struggles Against:**\n`;
+    matchups.slice(0, 5).forEach((m, i) => {
+      response += `${i + 1}. **${m.name}** - ${m.winRate}% WR vs them (${m.gamesAgainst} games, ${m.avgKDA} avg KDA)\n`;
+    });
+  } else {
+    response += `⚠️ Not enough data to determine matchups.\n`;
+    response += `Need at least 3 games against each opponent.\n`;
+  }
+
+  return response;
+}

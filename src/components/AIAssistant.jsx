@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Bot, Send, Trash2, Sparkles, Zap, User } from "lucide-react";
+import { Bot, Send, Trash2, Sparkles, Zap, User, Users, CheckCircle, XCircle, Download, Award, Swords } from "lucide-react";
 import { searchPlayer, getRecentMatches, formatMatchHistory, getPlayerProfile, getPlayerWinLoss } from "../services/opendota";
 import { getCommunityStats, findPlayerStats, formatPlayerStats, formatLeaderboard, comparePlayers } from "../services/communityStats";
+import * as htmlToImage from 'html-to-image';
 import {
   loadMatchData,
   analyzePlayer,
@@ -12,12 +13,21 @@ import {
   getPlayerHeroStats,
   getLeaderboard,
   getCounterPicks,
+  getBestTeammates,
+  getWorstTeammates,
+  getBestMatchups,
+  getWorstMatchups,
   formatPlayerAnalysis,
   formatHeroAnalysis,
   formatComparison,
   formatMetaAnalysis,
-  formatCounterPicks
+  formatCounterPicks,
+  formatBestTeammates,
+  formatWorstTeammates,
+  formatBestMatchups,
+  formatWorstMatchups
 } from "../services/matchAnalysis";
+import { generateAutoDrafts } from "../services/autoDraft";
 
 /**
  * AI Assistant Component
@@ -26,6 +36,17 @@ import {
 export default function AIAssistant({ userName, scheduleData }) {
   const [communityStats, setCommunityStats] = useState(null);
   const [matchDataLoaded, setMatchDataLoaded] = useState(false);
+  const [playerNames, setPlayerNames] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const inputRef = useRef(null);
+
+  // Auto-draft state
+  const [showDraftSelector, setShowDraftSelector] = useState(false);
+  const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [generatedDrafts, setGeneratedDrafts] = useState(null);
+  const draftCardRefs = useRef([]);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -35,10 +56,21 @@ export default function AIAssistant({ userName, scheduleData }) {
 I can help you with:
 
 📊 **PLAYER ANALYSIS** (From Permum Data)
-• "Analyze El'Chapo" - Deep performance breakdown
+• "Analyze @El'Chapo" - Deep performance breakdown (use @ for autocomplete!)
 • "El'Chapo on Puck" - Player + hero specific stats
 • "Compare El'Chapo vs sase" - Head-to-head comparison
 • "Leaderboard by KDA" - Rankings by any stat
+
+🤝 **PLAYER RELATIONSHIPS**
+• "Best teammates [player]" - Top performing duos
+• "Worst teammates [player]" - Struggling combos
+• "Best matchups [player]" - Enemy players they dominate
+• "Worst matchups [player]" - Enemy players they struggle against
+
+⚔️ **AUTO DRAFT** (NEW!)
+• "Auto draft" or "Draft teams" - Select 10 players for AI-balanced teams
+• Get 5 different balanced team compositions
+• Based on MMR, win rate, KDA, and roles
 
 🦸 **HERO ANALYTICS**
 • "Analyze Invoker" - Full hero meta analysis
@@ -58,7 +90,7 @@ I can help you with:
 • "Best carry items?" - Item builds
 • "Laning tips?" - Lane phase advice
 
-Try: "What counters Ogre?" or "Analyze Player" 🚀`,
+💡 **Pro Tip:** Type @ to see all available players! 🚀`,
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -77,8 +109,14 @@ Try: "What counters Ogre?" or "Analyze Player" 🚀`,
       setCommunityStats(stats);
     };
     const loadData = async () => {
-      await loadMatchData();
+      const { statsData } = await loadMatchData();
       setMatchDataLoaded(true);
+
+      // Extract unique player names from statistics
+      if (statsData && statsData.player_statistics) {
+        const names = statsData.player_statistics.map(p => String(p.player_name));
+        setPlayerNames(names);
+      }
     };
     loadStats();
     loadData();
@@ -88,9 +126,104 @@ Try: "What counters Ogre?" or "Analyze Player" 🚀`,
     scrollToBottom();
   }, [messages]);
 
+  // Handle input change with @ autocomplete
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+
+    setInput(value);
+    setCursorPosition(cursorPos);
+
+    // Check if we should show autocomplete
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (atIndex !== -1) {
+      const searchTerm = textBeforeCursor.substring(atIndex + 1).toLowerCase();
+
+      // Filter player names based on search term
+      const filtered = playerNames.filter(name =>
+        String(name).toLowerCase().includes(searchTerm)
+      );
+
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = (playerName) => {
+    // Find the @ symbol position
+    const textBeforeCursor = input.substring(0, cursorPosition);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (atIndex !== -1) {
+      // Replace from @ to cursor with the player name
+      const beforeAt = input.substring(0, atIndex);
+      const afterCursor = input.substring(cursorPosition);
+      const newInput = `${beforeAt}${playerName} ${afterCursor}`;
+
+      setInput(newInput);
+      setShowSuggestions(false);
+
+      // Focus back on input and set cursor after player name
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          const newCursorPos = atIndex + playerName.length + 1; // +1 for the space
+          inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 10);
+    }
+  };
+
+  // Handle keyboard navigation in autocomplete
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !showSuggestions) {
+      e.preventDefault();
+      handleSend();
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    } else if (e.key === "Tab" && showSuggestions && filteredSuggestions.length > 0) {
+      e.preventDefault();
+      handleSuggestionClick(filteredSuggestions[0]);
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (inputRef.current && !inputRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Smart AI responses with live data fetching
   const getAIResponse = async (userMessage) => {
     const msg = userMessage.toLowerCase();
+
+    // ============================================
+    // AUTO DRAFT FEATURE
+    // ============================================
+
+    // Auto draft - "Auto draft" or "Draft teams" or "Make draft"
+    if (msg.includes("auto draft") || msg.includes("draft teams") || msg.includes("make draft") || (msg.includes("draft") && msg.includes("10"))) {
+      setShowDraftSelector(true);
+      setSelectedPlayers([]);
+      return `**🎯 Auto Draft Generator**
+
+Please select 10 players from the list below to generate balanced team compositions.
+
+I'll analyze their stats and create 5 different balanced drafts for you!
+
+Click on players to select them (you need exactly 10).`;
+    }
 
     // ============================================
     // ADVANCED MATCH DATA ANALYTICS
@@ -277,6 +410,95 @@ Try: "What counters Ogre?" or "Analyze Player" 🚀`,
             return formatCounterPicks(counterData);
           } else {
             return `❌ Couldn't find "${heroName}" in the match database.\n\nTry checking the spelling or use hero names from your data.`;
+          }
+        }
+      }
+    }
+
+    // Best teammates - "Best teammates [player]" or "[player] best teammates"
+    if ((msg.includes("best teammate") || msg.includes("best team mate")) && matchDataLoaded) {
+      const patterns = [
+        /best\s+teammates?\s+(?:for\s+)?([a-z0-9'_]+)/i,
+        /([a-z0-9'_]+)\s+best\s+teammates?/i,
+        /who\s+(?:are|is)\s+([a-z0-9'_]+)(?:'s)?\s+best\s+teammates?/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = userMessage.match(pattern);
+        if (match) {
+          const playerName = match[1].trim();
+          const data = getBestTeammates(playerName);
+          if (data) {
+            return formatBestTeammates(data);
+          } else {
+            return `❌ Couldn't find player "${playerName}" in the match database.`;
+          }
+        }
+      }
+    }
+
+    // Worst teammates - "Worst teammates [player]" or "[player] worst teammates"
+    if ((msg.includes("worst teammate") || msg.includes("worst team mate")) && matchDataLoaded) {
+      const patterns = [
+        /worst\s+teammates?\s+(?:for\s+)?([a-z0-9'_]+)/i,
+        /([a-z0-9'_]+)\s+worst\s+teammates?/i,
+        /who\s+(?:are|is)\s+([a-z0-9'_]+)(?:'s)?\s+worst\s+teammates?/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = userMessage.match(pattern);
+        if (match) {
+          const playerName = match[1].trim();
+          const data = getWorstTeammates(playerName);
+          if (data) {
+            return formatWorstTeammates(data);
+          } else {
+            return `❌ Couldn't find player "${playerName}" in the match database.`;
+          }
+        }
+      }
+    }
+
+    // Best matchups - "Best matchups [player]" or "[player] best matchups"
+    if ((msg.includes("best matchup") || msg.includes("best match up")) && matchDataLoaded) {
+      const patterns = [
+        /best\s+matchups?\s+(?:for\s+)?([a-z0-9'_]+)/i,
+        /([a-z0-9'_]+)\s+best\s+matchups?/i,
+        /who\s+(?:does|do)\s+([a-z0-9'_]+)\s+(?:beat|dominate|own)/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = userMessage.match(pattern);
+        if (match) {
+          const playerName = match[1].trim();
+          const data = getBestMatchups(playerName);
+          if (data) {
+            return formatBestMatchups(data);
+          } else {
+            return `❌ Couldn't find player "${playerName}" in the match database.`;
+          }
+        }
+      }
+    }
+
+    // Worst matchups - "Worst matchups [player]" or "[player] worst matchups"
+    if ((msg.includes("worst matchup") || msg.includes("worst match up") || msg.includes("struggles against")) && matchDataLoaded) {
+      const patterns = [
+        /worst\s+matchups?\s+(?:for\s+)?([a-z0-9'_]+)/i,
+        /([a-z0-9'_]+)\s+worst\s+matchups?/i,
+        /who\s+(?:does|do)\s+([a-z0-9'_]+)\s+struggle\s+against/i,
+        /([a-z0-9'_]+)\s+struggles?\s+against\s+who/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = userMessage.match(pattern);
+        if (match) {
+          const playerName = match[1].trim();
+          const data = getWorstMatchups(playerName);
+          if (data) {
+            return formatWorstMatchups(data);
+          } else {
+            return `❌ Couldn't find player "${playerName}" in the match database.`;
           }
         }
       }
@@ -471,6 +693,86 @@ Try: "What counters Ogre?" or "Analyze Player" 🚀`,
     return `🤔 Interesting question! Here are some things I can help with:\n\n• **Hero questions**: "Who counters [hero]?", "Best [hero] build?"\n• **Strategy**: "How to win mid?", "Draft tips?"\n• **Community**: "Who's playing today?", "What's our team MMR?"\n• **Tips**: "Laning tips?", "How to climb MMR?"\n\nTry asking about a specific hero or game mechanic! 🎮`;
   };
 
+  // Handle player selection for auto-draft
+  const togglePlayerSelection = (playerName) => {
+    setSelectedPlayers(prev => {
+      if (prev.includes(playerName)) {
+        return prev.filter(p => p !== playerName);
+      } else if (prev.length < 10) {
+        return [...prev, playerName];
+      }
+      return prev;
+    });
+  };
+
+  // Generate drafts from selected players
+  const handleGenerateDrafts = async () => {
+    if (selectedPlayers.length !== 10) {
+      alert('Please select exactly 10 players');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Mock registered players data - in real app, this would come from Firebase
+      const registeredPlayersData = {};
+      selectedPlayers.forEach(name => {
+        const stats = communityStats?.players?.[name];
+        if (stats) {
+          registeredPlayersData[name] = stats;
+        }
+      });
+
+      const drafts = await generateAutoDrafts(selectedPlayers, registeredPlayersData);
+
+      // Store drafts for visual display
+      setGeneratedDrafts({ drafts, registeredPlayers: registeredPlayersData });
+
+      // Add AI message
+      const draftMessage = {
+        id: Date.now(),
+        role: "assistant",
+        content: `✨ **Generated 5 Balanced Team Compositions!**\n\nScroll down to see the visual draft cards. You can download each draft as an image.`,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, draftMessage]);
+      setShowDraftSelector(false);
+    } catch (error) {
+      console.error('Error generating drafts:', error);
+      alert('Failed to generate drafts. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Download draft card as image
+  const handleDownloadDraft = async (index) => {
+    const element = draftCardRefs.current[index];
+    if (!element) return;
+
+    try {
+      // First render
+      await htmlToImage.toPng(element);
+
+      // Second render for download
+      const dataUrl = await htmlToImage.toPng(element, {
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor: '#0f172a',
+        cacheBust: true,
+      });
+
+      const link = document.createElement('a');
+      const draftName = generatedDrafts.drafts[index].name.replace(/\s+/g, '-').toLowerCase();
+      link.download = `dota2-draft-${draftName}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error('Error downloading draft:', error);
+      alert('Failed to download draft. Please try again.');
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -652,26 +954,249 @@ Try: "What counters Ogre?" or "Analyze Player" 🚀`,
             </div>
           )}
 
+          {/* Player Selector for Auto Draft */}
+          {showDraftSelector && (
+            <div className="bg-slate-900/80 rounded-lg p-4 border-2 border-purple-500/50 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-white font-semibold">Select 10 Players</h3>
+                  <span className="text-purple-300 text-sm">({selectedPlayers.length}/10)</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDraftSelector(false);
+                    setSelectedPlayers([]);
+                  }}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto mb-3">
+                {playerNames.map((playerName, idx) => {
+                  const isSelected = selectedPlayers.includes(playerName);
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => togglePlayerSelection(playerName)}
+                      disabled={!isSelected && selectedPlayers.length >= 10}
+                      className={`flex items-center gap-2 p-2 rounded-lg transition-all text-sm ${
+                        isSelected
+                          ? 'bg-purple-600 text-white border-2 border-purple-400'
+                          : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-purple-500 disabled:opacity-40 disabled:cursor-not-allowed'
+                      }`}
+                    >
+                      {isSelected ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <User className="w-4 h-4" />
+                      )}
+                      <span className="truncate">{playerName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={handleGenerateDrafts}
+                disabled={selectedPlayers.length !== 10}
+                className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate {selectedPlayers.length === 10 ? 'Drafts' : `(${selectedPlayers.length}/10)`}
+              </button>
+            </div>
+          )}
+
+          {/* Generated Draft Cards */}
+          {generatedDrafts && (
+            <div className="space-y-4 mb-4">
+              {generatedDrafts.drafts.map((draft, idx) => (
+                <div
+                  key={idx}
+                  ref={(el) => (draftCardRefs.current[idx] = el)}
+                  className="bg-slate-900 rounded-xl border-2 border-slate-700 overflow-hidden"
+                >
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 p-4 border-b border-slate-700">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Swords className="w-5 h-5 text-purple-400" />
+                          <h3 className="text-white font-bold text-lg">{draft.name}</h3>
+                          {idx === 3 && (
+                            <span className="px-2 py-0.5 bg-purple-600/30 text-purple-300 text-xs border border-purple-500/50 rounded">
+                              Recommended
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-slate-400 text-sm mt-1">{draft.description}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadDraft(idx)}
+                        className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Download</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Teams Grid */}
+                  <div className="grid grid-cols-2 gap-0">
+                    {/* Radiant Team */}
+                    <div className="bg-green-900/20 p-4 border-r border-slate-700">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-green-400 font-bold text-lg">Radiant</h4>
+                        <div className="text-green-300 text-sm font-semibold">
+                          {draft.team1.totalMMR?.toLocaleString() || 0} MMR
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {/* Captain */}
+                        <div className="bg-green-900/30 rounded-lg p-2 border border-green-500/30">
+                          <div className="flex items-center gap-2">
+                            <Award className="w-4 h-4 text-yellow-400" />
+                            <div className="flex-1">
+                              <div className="text-white font-semibold text-sm">{draft.team1.captain}</div>
+                              <div className="text-green-300 text-xs">
+                                Captain • {generatedDrafts.registeredPlayers[draft.team1.captain]?.mmr?.toLocaleString() || 0} MMR
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Players */}
+                        {draft.team1.players.map((player, pidx) => (
+                          <div key={pidx} className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                            <div className="text-white font-medium text-sm">{player}</div>
+                            <div className="text-slate-400 text-xs">
+                              {generatedDrafts.registeredPlayers[player]?.mmr?.toLocaleString() || 0} MMR
+                              {generatedDrafts.registeredPlayers[player]?.role && (
+                                <span> • {generatedDrafts.registeredPlayers[player].role}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dire Team */}
+                    <div className="bg-red-900/20 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-red-400 font-bold text-lg">Dire</h4>
+                        <div className="text-red-300 text-sm font-semibold">
+                          {draft.team2.totalMMR?.toLocaleString() || 0} MMR
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {/* Captain */}
+                        <div className="bg-red-900/30 rounded-lg p-2 border border-red-500/30">
+                          <div className="flex items-center gap-2">
+                            <Award className="w-4 h-4 text-yellow-400" />
+                            <div className="flex-1">
+                              <div className="text-white font-semibold text-sm">{draft.team2.captain}</div>
+                              <div className="text-red-300 text-xs">
+                                Captain • {generatedDrafts.registeredPlayers[draft.team2.captain]?.mmr?.toLocaleString() || 0} MMR
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Players */}
+                        {draft.team2.players.map((player, pidx) => (
+                          <div key={pidx} className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                            <div className="text-white font-medium text-sm">{player}</div>
+                            <div className="text-slate-400 text-xs">
+                              {generatedDrafts.registeredPlayers[player]?.mmr?.toLocaleString() || 0} MMR
+                              {generatedDrafts.registeredPlayers[player]?.role && (
+                                <span> • {generatedDrafts.registeredPlayers[player].role}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Balance Stats Footer */}
+                  <div className="bg-slate-800/50 p-3 border-t border-slate-700 flex items-center justify-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">MMR Difference:</span>
+                      <span className="text-purple-300 font-semibold">{draft.balance.mmrDiff?.toLocaleString() || 0}</span>
+                    </div>
+                    <div className="w-px h-4 bg-slate-600"></div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">Fairness Score:</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                            style={{ width: `${draft.balance.fairness}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-purple-300 font-semibold">{draft.balance.fairness}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-slate-700">
+        <div className="p-4 border-t border-slate-700 relative">
+          {/* Autocomplete Suggestions */}
+          {showSuggestions && filteredSuggestions.length > 0 && (
+            <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-900 border-2 border-purple-500 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50">
+              <div className="p-2">
+                <div className="text-xs text-purple-400 font-semibold px-2 py-1 mb-1">
+                  Players ({filteredSuggestions.length})
+                </div>
+                {filteredSuggestions.map((playerName, idx) => (
+                  <button
+                    key={idx}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent input from losing focus
+                      handleSuggestionClick(playerName);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-purple-600/30 rounded-md transition-colors text-white text-sm flex items-center gap-2"
+                  >
+                    <User className="w-4 h-4 text-purple-400" />
+                    {playerName}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Ask me anything about Dota 2..."
-              disabled={isLoading}
-              className="flex-1 px-4 py-3 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50"
-            />
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onClick={(e) => setCursorPosition(e.target.selectionStart)}
+                onKeyUp={(e) => setCursorPosition(e.target.selectionStart)}
+                placeholder="Ask me anything about Dota 2... (Type @ for player names)"
+                disabled={isLoading}
+                className="w-full px-4 py-3 bg-slate-900/50 text-white rounded-lg border-2 border-slate-700 focus:border-purple-500 focus:outline-none disabled:opacity-50"
+              />
+              {input.includes('@') && !showSuggestions && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 text-xs animate-pulse">
+                  @ autocomplete active
+                </div>
+              )}
+            </div>
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
