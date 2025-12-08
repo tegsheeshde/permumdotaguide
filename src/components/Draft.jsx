@@ -360,7 +360,107 @@ export default function Draft() {
         </div>
       ) : (
         <>
-          {/* 3-Column Grid: Radiant | All Players | Dire */}
+          {/* All Players List - Top Section */}
+          <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-700/50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-cyan-400" />
+                <span>
+                  All Players <span className="text-purple-400">({Object.keys(registeredPlayers).length} total)</span>
+                </span>
+              </h3>
+            </div>
+
+            {isLoadingPlayers ? (
+              <div className="text-center py-8">
+                <div className="inline-block w-6 h-6 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-400 mt-2 text-xs">Loading...</p>
+              </div>
+            ) : (
+              <div className="max-h-[300px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                  {Object.entries(registeredPlayers)
+                    .sort((a, b) => (b[1].mmr || 0) - (a[1].mmr || 0))
+                    .map(([playerName, stats]) => {
+                      const getRankName = (rankTier) => {
+                        if (!rankTier) return "Unranked";
+                        if (typeof rankTier === "string") {
+                          return rankTier.charAt(0).toUpperCase() + rankTier.slice(1);
+                        }
+                        const ranks = ["Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
+                        const tier = Math.floor(rankTier / 10);
+                        const star = rankTier % 10;
+                        if (tier === 8) return `Immortal ${star > 0 ? `#${star}` : ""}`;
+                        return `${ranks[tier - 1]} ${star}`;
+                      };
+
+                      const isInAvailable = draftData.availablePlayers.includes(playerName);
+
+                      return (
+                        <div
+                          key={playerName}
+                          className="p-2 rounded border transition-all bg-slate-900/60 border-slate-700/50 hover:border-cyan-500/50"
+                        >
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              {stats.avatar ? (
+                                <img
+                                  src={stats.avatar}
+                                  alt={playerName}
+                                  className="w-8 h-8 rounded-full border border-cyan-600/50"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs">
+                                  {playerName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-white font-medium text-xs truncate">{playerName}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                                  <span className="text-yellow-400 font-medium">{getRankName(stats.rank)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
+                              <div className="flex items-center gap-1">
+                                {stats.mmr > 0 && <span>{stats.mmr.toLocaleString()} MMR</span>}
+                                {stats.role && <span>• {stats.role.charAt(0).toUpperCase() + stats.role.slice(1)}</span>}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                if (!isInAvailable) {
+                                  updateDraft({ availablePlayers: [...draftData.availablePlayers, playerName] });
+                                }
+                              }}
+                              disabled={isInAvailable}
+                              className="w-full px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-xs font-medium transition-colors"
+                              title={isInAvailable ? "Already in Available Players" : "Add to Available Players"}
+                            >
+                              {isInAvailable ? "Added" : "Add"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {Object.keys(registeredPlayers).length === 0 && (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-slate-600 mx-auto mb-2" />
+                    <p className="text-slate-400 text-xs">No players registered</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 3-Column Grid: Radiant | Available Players | Dire */}
           <div ref={draftAreaRef} className="grid grid-cols-1 lg:grid-cols-3 gap-4 backdrop-blur-sm ">
             {/* Radiant Team */}
             <div className="bg-linear-to-br from-green-900/40 to-slate-900/60 rounded-xl p-4 border-2 border-green-500/30">
@@ -504,13 +604,13 @@ export default function Draft() {
               </div>
             </div>
 
-            {/* All Players - Center Column */}
+            {/* Available Players - Center Column */}
             <div className="bg-linear-to-br from-slate-800/80 to-slate-800/50 backdrop-blur-sm rounded-xl p-4 border-2 border-slate-700/50">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Users className="w-4 h-4 text-cyan-400" />
                   <span>
-                    All Players <span className="text-purple-400">({draftData.team1.length + draftData.team2.length} drafted / {Object.keys(registeredPlayers).length + draftData.availablePlayers.filter(p => !registeredPlayers[p]).length} total)</span>
+                    Available Players <span className="text-purple-400">({draftData.availablePlayers.length})</span>
                   </span>
                 </h3>
                 <div className="flex gap-2">
@@ -561,86 +661,57 @@ export default function Draft() {
                 </div>
               ) : (
                 <div className="max-h-[500px] overflow-y-auto space-y-2 pr-1">
-                  {/* Registered players */}
-                  {Object.entries(registeredPlayers)
-                    .sort((a, b) => (b[1].mmr || 0) - (a[1].mmr || 0))
-                    .map(([playerName, stats]) => {
-                      const getRankName = (rankTier) => {
-                        if (!rankTier) return "Unranked";
-                        if (typeof rankTier === "string") {
-                          return rankTier.charAt(0).toUpperCase() + rankTier.slice(1);
-                        }
-                        const ranks = ["Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
-                        const tier = Math.floor(rankTier / 10);
-                        const star = rankTier % 10;
-                        if (tier === 8) return `Immortal ${star > 0 ? `#${star}` : ""}`;
-                        return `${ranks[tier - 1]} ${star}`;
-                      };
+                  {/* Only show players that are in availablePlayers array */}
+                  {draftData.availablePlayers
+                    .map((playerName) => {
+                      const stats = registeredPlayers[playerName];
 
-                      const isInTeam1 = draftData.team1.includes(playerName);
-                      const isInTeam2 = draftData.team2.includes(playerName);
-                      const isCaptain1 = draftData.captain1 === playerName;
-                      const isCaptain2 = draftData.captain2 === playerName;
-                      const isDrafted = isInTeam1 || isInTeam2 || isCaptain1 || isCaptain2;
-                      const pickNumber = isDrafted ? getDraftPickNumber(playerName) : null;
+                      if (stats) {
+                        // Registered player
+                        const getRankName = (rankTier) => {
+                          if (!rankTier) return "Unranked";
+                          if (typeof rankTier === "string") {
+                            return rankTier.charAt(0).toUpperCase() + rankTier.slice(1);
+                          }
+                          const ranks = ["Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
+                          const tier = Math.floor(rankTier / 10);
+                          const star = rankTier % 10;
+                          if (tier === 8) return `Immortal ${star > 0 ? `#${star}` : ""}`;
+                          return `${ranks[tier - 1]} ${star}`;
+                        };
 
-                      return (
-                        <div
-                          key={playerName}
-                          className={`p-2 rounded border transition-all ${
-                            isDrafted
-                              ? "bg-slate-900/20 border-slate-700/30 opacity-50"
-                              : "bg-slate-900/60 border-slate-700/50 hover:border-cyan-500/50"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {stats.avatar ? (
-                              <img
-                                src={stats.avatar}
-                                alt={playerName}
-                                className="w-8 h-8 rounded-full border border-cyan-600/50"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs">
-                                {playerName.charAt(0).toUpperCase()}
+                        return (
+                          <div
+                            key={playerName}
+                            className="p-2 rounded border transition-all bg-slate-900/60 border-slate-700/50 hover:border-cyan-500/50"
+                          >
+                            <div className="flex items-center gap-2">
+                              {stats.avatar ? (
+                                <img
+                                  src={stats.avatar}
+                                  alt={playerName}
+                                  className="w-8 h-8 rounded-full border border-cyan-600/50"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs">
+                                  {playerName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-white font-medium text-xs truncate">{playerName}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                                  <span className="text-yellow-400 font-medium">{getRankName(stats.rank)}</span>
+                                  {stats.mmr > 0 && <span>• {stats.mmr.toLocaleString()}</span>}
+                                  {stats.role && <span>• {stats.role.charAt(0).toUpperCase() + stats.role.slice(1)}</span>}
+                                </div>
                               </div>
-                            )}
 
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1">
-                                <span className="text-white font-medium text-xs truncate">{playerName}</span>
-                                {isDrafted && (
-                                  <>
-                                    <span className="text-[10px] px-1 py-0.5 bg-purple-600/20 text-purple-400 border border-purple-600/40 rounded">
-                                      {(isInTeam1 || isCaptain1) ? "R" : "D"}
-                                    </span>
-                                    {(isCaptain1 || isCaptain2) && (
-                                      <Award className="w-3 h-3 text-yellow-400" title="Captain" />
-                                    )}
-                                    {pickNumber && (
-                                      <span className="text-[10px] px-1 py-0.5 bg-cyan-600/20 text-cyan-400 border border-cyan-600/40 rounded font-semibold">
-                                        #{pickNumber}
-                                      </span>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                                <span className="text-yellow-400 font-medium">{getRankName(stats.rank)}</span>
-                                {stats.mmr > 0 && <span>• {stats.mmr.toLocaleString()}</span>}
-                                {stats.role && <span>• {stats.role.charAt(0).toUpperCase() + stats.role.slice(1)}</span>}
-                              </div>
-                            </div>
-
-                            {!isDrafted ? (
                               <div className="flex gap-1">
                                 <button
-                                  onClick={() => {
-                                    if (!draftData.availablePlayers.includes(playerName)) {
-                                      updateDraft({ availablePlayers: [...draftData.availablePlayers, playerName] });
-                                    }
-                                    setTimeout(() => movePlayerToTeam(playerName, "team1"), 100);
-                                  }}
+                                  onClick={() => movePlayerToTeam(playerName, "team1")}
                                   className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-[10px] font-medium transition-colors disabled:opacity-40"
                                   disabled={draftData.team1.length >= 4}
                                   title="Add to Radiant"
@@ -648,76 +719,77 @@ export default function Draft() {
                                   R
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    if (!draftData.availablePlayers.includes(playerName)) {
-                                      updateDraft({ availablePlayers: [...draftData.availablePlayers, playerName] });
-                                    }
-                                    setTimeout(() => movePlayerToTeam(playerName, "team2"), 100);
-                                  }}
+                                  onClick={() => movePlayerToTeam(playerName, "team2")}
                                   className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-medium transition-colors disabled:opacity-40"
                                   disabled={draftData.team2.length >= 4}
                                   title="Add to Dire"
                                 >
                                   D
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    updateDraft({
+                                      availablePlayers: draftData.availablePlayers.filter(p => p !== playerName)
+                                    });
+                                  }}
+                                  className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[10px] font-medium transition-colors"
+                                  title="Remove from Available Players"
+                                >
+                                  -
+                                </button>
                               </div>
-                            ) : (
-                              <button
-                                onClick={() => movePlayerToTeam(playerName, "available")}
-                                className="px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-[10px] font-medium transition-colors"
-                              >
-                                ×
-                              </button>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
+                      } else {
+                        // Manual player (non-registered)
+                        return (
+                          <div
+                            key={playerName}
+                            className="p-2 rounded border bg-slate-900/60 border-slate-700/50 hover:border-cyan-500/50 transition-all"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs">
+                                {playerName.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="flex-1 text-white font-medium text-xs">{playerName}</span>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => movePlayerToTeam(playerName, "team1")}
+                                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-[10px] font-medium transition-colors disabled:opacity-40"
+                                  disabled={draftData.team1.length >= 4}
+                                  title="Add to Radiant"
+                                >
+                                  R
+                                </button>
+                                <button
+                                  onClick={() => movePlayerToTeam(playerName, "team2")}
+                                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-medium transition-colors disabled:opacity-40"
+                                  disabled={draftData.team2.length >= 4}
+                                  title="Add to Dire"
+                                >
+                                  D
+                                </button>
+                                <button
+                                  onClick={() => removePlayer(playerName)}
+                                  className="px-1.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[10px] transition-colors"
+                                  title="Remove player"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
                     })}
 
-                  {/* Non-registered players */}
-                  {draftData.availablePlayers
-                    .filter(player => !registeredPlayers[player])
-                    .map((player) => (
-                      <div
-                        key={player}
-                        className="p-2 rounded border bg-slate-900/60 border-slate-700/50 hover:border-cyan-500/50 transition-all"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs">
-                            {player.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="flex-1 text-white font-medium text-xs">{player}</span>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => movePlayerToTeam(player, "team1")}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-[10px] font-medium transition-colors disabled:opacity-40"
-                              disabled={draftData.team1.length >= 4}
-                            >
-                              R
-                            </button>
-                            <button
-                              onClick={() => movePlayerToTeam(player, "team2")}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-medium transition-colors disabled:opacity-40"
-                              disabled={draftData.team2.length >= 4}
-                            >
-                              D
-                            </button>
-                            <button
-                              onClick={() => removePlayer(player)}
-                              className="px-1.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[10px] transition-colors"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
                   {/* Empty state */}
-                  {Object.keys(registeredPlayers).length === 0 && draftData.availablePlayers.length === 0 && (
+                  {draftData.availablePlayers.length === 0 && (
                     <div className="text-center py-8">
                       <Users className="w-12 h-12 text-slate-600 mx-auto mb-2" />
-                      <p className="text-slate-400 text-xs">No players</p>
+                      <p className="text-slate-400 text-xs">No available players</p>
+                      <p className="text-slate-500 text-xs mt-1">Add players from the "All Players" section above</p>
                     </div>
                   )}
                 </div>
