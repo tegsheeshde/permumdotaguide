@@ -7,6 +7,8 @@ import ScheduleWithPolls from "./components/ScheduleWithPolls";
 import Guide from "./components/Guide";
 import PlayerList from "./components/PlayerList";
 import Statistics from "./components/Statistics";
+import Dashboard from "./components/Dashboard";
+import MatchEntry from "./components/MatchEntry";
 import Chat from "./components/Chat";
 import Feed from "./components/Feed";
 import AIAssistant from "./components/AIAssistant";
@@ -15,13 +17,31 @@ import VersionChecker from "./components/VersionChecker";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'feed', 'guide', or 'ai'
+  const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'dashboard', 'matchentry', 'feed', 'guide', or 'ai'
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || ""
   );
   const [showNameModal, setShowNameModal] = useState(
     !localStorage.getItem("userName")
   );
+  const [currentBgIndex, setCurrentBgIndex] = useState(0);
+
+  // Background images array
+  const backgroundImages = [
+    "backgrounds/dotawallpapers.com-dota-2-anime-girl-windranger-3840x2626.jpg",
+    "backgrounds/dotawallpapers.com-drow-ranger-dota-2-nude-fan-art-3840x2702.jpg",
+    "backgrounds/dotawallpapers.com-drow-ranger-nude-art-from-dota-2-2064x2064.jpg",
+    "backgrounds/dotawallpapers.com-hot-marci-model-in-a-golden-dress-fan-art-4k-3840x2626.jpg",
+    "backgrounds/dotawallpapers.com-lanaya-facesitting-fan-art-2560x1766.jpg",
+    "backgrounds/dotawallpapers.com-lanaya-ganking-bdsm-dota-2-game-art-1824x1248.jpg",
+    "backgrounds/dotawallpapers.com-little-devil-marci-sexy-wallpaper-4k-3888x2656.jpg",
+    "backgrounds/dotawallpapers.com-marci-at-the-pool-fan-art-5000x3426.jpg",
+    "backgrounds/dotawallpapers.com-marci-with-drow-ranger-cute-fan-art-1600x1131.jpg",
+    "backgrounds/dotawallpapers.com-templar-assassin-facesitting-1856x1280.jpg",
+    "backgrounds/dotawallpapers.com-wei-the-anti-mage-from-dota-2-3d-image-3840x2160.jpg",
+    "backgrounds/dotawallpapers.com-windranger-nude-art-from-dota-2-3840x2626.jpg",
+    "backgrounds/dotawallpapers.com-windranger-topless-nice-boobs-fan-art-3840x2626.jpg",
+  ];
 
   // Schedule Maker State (Kept in App.jsx as it's shared with Header)
   const [scheduleData, setScheduleData] = useState({
@@ -29,6 +49,15 @@ export default function App() {
     preferences: {}, // { playerName: { lan: true, ranked: true } }
     playerStats: {}, // { playerName: { steamId, mmr, rank, etc } }
   });
+
+  // Auto-rotate background images every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBgIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
+    }, 10000); // Change every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [backgroundImages.length]);
 
   // Load and sync schedule data from Firebase
   useEffect(() => {
@@ -99,17 +128,25 @@ export default function App() {
   return (
     <div className="min-h-screen relative">
       <Analytics />
-      {/* Background Image with Overlay */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: `url(${import.meta.env.BASE_URL}dota.png)`,
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          backgroundAttachment: "fixed",
-        }}
-      >
-        <div className="absolute inset-0 bg-linear-to-br from-slate-950/25 via-slate-900/35 to-slate-950/30"></div>
+      {/* Auto-rotating Background Images with Overlay */}
+      <div className="fixed inset-0 z-0">
+        {/* Background images with fade transition */}
+        {backgroundImages.map((image, index) => (
+          <div
+            key={image}
+            className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
+            style={{
+              backgroundImage: `url(${import.meta.env.BASE_URL}${image})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundAttachment: "fixed",
+              opacity: currentBgIndex === index ? 1 : 0,
+              zIndex: currentBgIndex === index ? 1 : 0,
+            }}
+          />
+        ))}
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-linear-to-br from-slate-950/40 via-slate-900/50 to-slate-950/40 z-10"></div>
       </div>
 
       {/* Name Modal */}
@@ -173,6 +210,10 @@ export default function App() {
         {currentPage === "draft" && <Draft />}
 
         {currentPage === "players" && <PlayerList userName={userName} />}
+
+        {currentPage === "dashboard" && <Dashboard />}
+
+        {currentPage === "matchentry" && <MatchEntry />}
 
         {currentPage === "statistics" && <Statistics />}
 

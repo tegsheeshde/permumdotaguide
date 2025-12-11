@@ -15,6 +15,11 @@
   animation: pulse-slow 3s ease-in-out infinite;
 }
 
+/* Custom transition duration for background carousel */
+.transition-opacity.duration-2000 {
+  transition-duration: 2000ms;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
