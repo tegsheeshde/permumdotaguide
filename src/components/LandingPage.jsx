@@ -17,18 +17,19 @@ export default function LandingPage({ onEnterApp }) {
   const [hasShownDemo, setHasShownDemo] = useState(false);
   const leaderboardRef = useRef(null);
 
-  const funnyQuotes = [
-    "Predicts everything… except the gank.",
-    "God of Oracle but God from Temu",
-    "Immortal brain, disconnected hands.",
-    "Feeding is just aggressive warding",
-    "It's not my fault",
-    "Tilting is my warm-up routine",
-    "I'm not feeding, I'm scouting!",
-    "Professional explainer, part-time player.",
-    "Supporting the team by farming.",
-    "Playing Dota vs enemy team and my PC."
-  ];
+  // Player-specific funny quotes
+  const funnyQuotes = {
+    "humbledog": "Predicts everything… except the gank.",
+    "@Nine.!": "God of Oracle but God from Temu",
+    "Elchapo": "It's not my fault",
+    "Nimqa": "Feeding is just aggressive warding",
+    ".911": "Immortal brain, disconnected hands.",
+    "Woody": "Tilting is my warm-up routine",
+    "Orgil": "I'm not feeding, I'm scouting!",
+    "Khume": "Professional explainer, part-time player.",
+    "Rozigoo": "Supporting the team by farming.",
+    "Brown OO": "Playing Dota vs enemy team and my PC."
+  };
 
   const toggleCard = (playerName) => {
     setFlippedCards(prev => ({
@@ -660,7 +661,7 @@ export default function LandingPage({ onEnterApp }) {
                           {/* Funny Quote - Right Side */}
                           <div className="flex-1 flex flex-col justify-center">
                             <p className="text-sm font-bold text-white mb-1 leading-tight">
-                              "{funnyQuotes[index] || "Legend in the making! 🌟"}"
+                              "{funnyQuotes[player.name] || "Legend in the making! 🌟"}"
                             </p>
                             <p className="text-xs text-slate-400 italic mb-2">
                               - {player.name}
