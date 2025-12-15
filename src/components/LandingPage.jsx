@@ -17,18 +17,18 @@ export default function LandingPage({ onEnterApp }) {
   const [hasShownDemo, setHasShownDemo] = useState(false);
   const leaderboardRef = useRef(null);
 
-  // Player-specific funny quotes
+  // Player-specific funny quotes with custom names
   const funnyQuotes = {
-    "humbledog": "Predicts everything… except the gank.",
-    "@Nine.!": "God of Oracle but God from Temu",
-    "Elchapo": "It's not my fault",
-    "Nimqa": "Feeding is just aggressive warding",
-    ".911": "Immortal brain, disconnected hands.",
-    "Woody": "Tilting is my warm-up routine",
-    "Orgil": "I'm not feeding, I'm scouting!",
-    "Khume": "Professional explainer, part-time player.",
-    "Rozigoo": "Supporting the team by farming.",
-    "Brown OO": "Playing Dota vs enemy team and my PC."
+    "humbledog": { quote: "Predicts everything… except the gank.", name: "Tebo" },
+    "@Nine.!": { quote: "God of Oracle but God from Temu", name: "Purevee" },
+    "Elchapo": { quote: "It's not my fault", name: "Tegshee" },
+    "xaky": { quote: "Feeding is just aggressive warding", name: "Tuguldur" },
+    ".911": { quote: "Immortal brain, disconnected hands.", name: "Nimqa" },
+    "Woody": { quote: "Tilting is my warm-up routine", name: "Khasaa" },
+    "Orgil": { quote: "I'm not feeding, I'm scouting!", name: "Orgil" },
+    "Khume": { quote: "Professional explainer, part-time player.", name: "Khuslen" },
+    "Rozigoo": { quote: "Supporting the team by farming.", name: "Zorigoo" },
+    "Brown OO": { quote: "Playing Dota vs enemy team and my PC.", name: "Magnai" }
   };
 
   const toggleCard = (playerName) => {
@@ -661,10 +661,10 @@ export default function LandingPage({ onEnterApp }) {
                           {/* Funny Quote - Right Side */}
                           <div className="flex-1 flex flex-col justify-center">
                             <p className="text-sm font-bold text-white mb-1 leading-tight">
-                              "{funnyQuotes[player.name] || "Legend in the making! 🌟"}"
+                              "{funnyQuotes[player.name]?.quote || "Legend in the making! 🌟"}"
                             </p>
                             <p className="text-xs text-slate-400 italic mb-2">
-                              - {player.name}
+                              - {funnyQuotes[player.name]?.name || player.name}
                             </p>
                             {/* Click hint */}
                             <motion.div
