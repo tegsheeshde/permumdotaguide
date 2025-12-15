@@ -3,7 +3,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown, Trophy, Users, Zap, TrendingUp, Award, Gamepad } from "lucide-react";
 import { useLandingData } from "../hooks/useLandingData";
 import AnimatedCounter from "./AnimatedCounter";
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 
 /**
  * LandingPage Component
@@ -81,7 +81,7 @@ export default function LandingPage({ onEnterApp }) {
     ],
     []
   );
-  
+
 
   return (
     <div className="relative w-full bg-slate-950">
