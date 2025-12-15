@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import Header from "./components/Header";
+import LandingPage from "./components/LandingPage";
 import Draft from "./components/Draft";
 import ScheduleWithPolls from "./components/ScheduleWithPolls";
 import Guide from "./components/Guide";
@@ -17,31 +18,13 @@ import VersionChecker from "./components/VersionChecker";
 import { Analytics } from "@vercel/analytics/react";
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("feed"); // 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'dashboard', 'matchentry', 'feed', 'guide', or 'ai'
+  const [currentPage, setCurrentPage] = useState("landing"); // 'landing', 'home', 'draft', 'schedule', 'players', 'chat', 'statistics', 'dashboard', 'matchentry', 'feed', 'guide', or 'ai'
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || ""
   );
   const [showNameModal, setShowNameModal] = useState(
     !localStorage.getItem("userName")
   );
-  const [currentBgIndex, setCurrentBgIndex] = useState(0);
-
-  // Background images array
-  const backgroundImages = [
-    "backgrounds/dotawallpapers.com-dota-2-anime-girl-windranger-3840x2626.jpg",
-    "backgrounds/dotawallpapers.com-drow-ranger-dota-2-nude-fan-art-3840x2702.jpg",
-    "backgrounds/dotawallpapers.com-drow-ranger-nude-art-from-dota-2-2064x2064.jpg",
-    "backgrounds/dotawallpapers.com-hot-marci-model-in-a-golden-dress-fan-art-4k-3840x2626.jpg",
-    "backgrounds/dotawallpapers.com-lanaya-facesitting-fan-art-2560x1766.jpg",
-    "backgrounds/dotawallpapers.com-lanaya-ganking-bdsm-dota-2-game-art-1824x1248.jpg",
-    "backgrounds/dotawallpapers.com-little-devil-marci-sexy-wallpaper-4k-3888x2656.jpg",
-    "backgrounds/dotawallpapers.com-marci-at-the-pool-fan-art-5000x3426.jpg",
-    "backgrounds/dotawallpapers.com-marci-with-drow-ranger-cute-fan-art-1600x1131.jpg",
-    "backgrounds/dotawallpapers.com-templar-assassin-facesitting-1856x1280.jpg",
-    "backgrounds/dotawallpapers.com-wei-the-anti-mage-from-dota-2-3d-image-3840x2160.jpg",
-    "backgrounds/dotawallpapers.com-windranger-nude-art-from-dota-2-3840x2626.jpg",
-    "backgrounds/dotawallpapers.com-windranger-topless-nice-boobs-fan-art-3840x2626.jpg",
-  ];
 
   // Schedule Maker State (Kept in App.jsx as it's shared with Header)
   const [scheduleData, setScheduleData] = useState({
@@ -49,15 +32,6 @@ export default function App() {
     preferences: {}, // { playerName: { lan: true, ranked: true } }
     playerStats: {}, // { playerName: { steamId, mmr, rank, etc } }
   });
-
-  // Auto-rotate background images every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentBgIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
-    }, 10000); // Change every 10 seconds
-
-    return () => clearInterval(interval);
-  }, [backgroundImages.length]);
 
   // Load and sync schedule data from Firebase
   useEffect(() => {
@@ -128,26 +102,21 @@ export default function App() {
   return (
     <div className="min-h-screen relative">
       <Analytics />
-      {/* Auto-rotating Background Images with Overlay */}
-      <div className="fixed inset-0 z-0">
-        {/* Background images with fade transition */}
-        {backgroundImages.map((image, index) => (
+      {/* Hide background on landing page - LandingPage has its own parallax background */}
+      {currentPage !== "landing" && (
+        <div className="fixed inset-0 z-0">
           <div
-            key={image}
-            className="absolute inset-0 transition-opacity duration-2000 ease-in-out"
+            className="absolute inset-0"
             style={{
-              backgroundImage: `url(${import.meta.env.BASE_URL}${image})`,
+              backgroundImage: `url(/backgrounds/dotawallpapers.com-wei-the-anti-mage-from-dota-2-3d-image-3840x2160.jpg)`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               backgroundAttachment: "fixed",
-              opacity: currentBgIndex === index ? 1 : 0,
-              zIndex: currentBgIndex === index ? 1 : 0,
             }}
           />
-        ))}
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-linear-to-br from-slate-950/40 via-slate-900/50 to-slate-950/40 z-10"></div>
-      </div>
+          <div className="absolute inset-0 bg-linear-to-br from-slate-950/40 via-slate-900/50 to-slate-950/40 z-10"></div>
+        </div>
+      )}
 
       {/* Name Modal */}
       {showNameModal && (
@@ -193,40 +162,48 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8 py-6">
-        {currentPage === "chat" && (
-          <Chat userName={userName} setShowNameModal={setShowNameModal} />
-        )}
+      {/* Landing Page (full screen, no container) */}
+      {currentPage === "landing" && (
+        <LandingPage onEnterApp={() => setCurrentPage("feed")} />
+      )}
 
-        {(currentPage === "home" || currentPage === "schedule") && (
-          <ScheduleWithPolls
-            scheduleData={scheduleData}
-            updateSchedule={updateSchedule}
-            userName={userName}
-            setShowNameModal={setShowNameModal}
-          />
-        )}
+      {/* Other Pages (with container) */}
+      {currentPage !== "landing" && (
+        <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8 py-6">
+          {currentPage === "chat" && (
+            <Chat userName={userName} setShowNameModal={setShowNameModal} />
+          )}
 
-        {currentPage === "draft" && <Draft />}
+          {(currentPage === "home" || currentPage === "schedule") && (
+            <ScheduleWithPolls
+              scheduleData={scheduleData}
+              updateSchedule={updateSchedule}
+              userName={userName}
+              setShowNameModal={setShowNameModal}
+            />
+          )}
 
-        {currentPage === "players" && <PlayerList userName={userName} />}
+          {currentPage === "draft" && <Draft />}
 
-        {currentPage === "dashboard" && <Dashboard />}
+          {currentPage === "players" && <PlayerList userName={userName} />}
 
-        {currentPage === "matchentry" && <MatchEntry />}
+          {currentPage === "dashboard" && <Dashboard />}
 
-        {currentPage === "statistics" && <Statistics />}
+          {currentPage === "matchentry" && <MatchEntry />}
 
-        {currentPage === "feed" && (
-          <Feed userName={userName} setShowNameModal={setShowNameModal} />
-        )}
+          {currentPage === "statistics" && <Statistics />}
 
-        {currentPage === "guide" && <Guide />}
+          {currentPage === "feed" && (
+            <Feed userName={userName} setShowNameModal={setShowNameModal} />
+          )}
 
-        {currentPage === "ai" && (
-          <AIAssistant userName={userName} scheduleData={scheduleData} />
-        )}
-      </div>
+          {currentPage === "guide" && <Guide />}
+
+          {currentPage === "ai" && (
+            <AIAssistant userName={userName} scheduleData={scheduleData} />
+          )}
+        </div>
+      )}
 
       {/* Notification Prompt */}
       <NotificationPrompt />

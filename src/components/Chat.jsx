@@ -27,6 +27,9 @@ import { setupForegroundMessageListener, showLocalNotification, areNotifications
  * - Efficient real-time listeners
  * - Detaches listeners when component unmounts
  */
+// TEMPORARY: Set to false to disable presence feature if causing issues
+const ENABLE_PRESENCE = true;
+
 export default function Chat({ userName, setShowNameModal }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -34,16 +37,29 @@ export default function Chat({ userName, setShowNameModal }) {
   const [isSending, setIsSending] = useState(false);
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const messagesEndRef = useRef(null);
+  const listenerSetupRef = useRef(false); // Track if listener is already set up
 
-  const { onlineUsers, error: presenceError } = usePresence(userName);
+  // Always call the hook (React rule), but pass empty string to disable it
+  const presenceResult = usePresence(ENABLE_PRESENCE ? userName : "");
+  const { onlineUsers, error: presenceError } = presenceResult;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Cleanup messages older than 7 days
+  // Cleanup messages older than 7 days (with throttling)
   const cleanupOldMessages = async () => {
     try {
+      // Check if cleanup was run recently (within last 24 hours)
+      const lastCleanup = localStorage.getItem('lastChatCleanup');
+      const now = Date.now();
+
+      if (lastCleanup && (now - parseInt(lastCleanup)) < 24 * 60 * 60 * 1000) {
+        console.log('[Chat] Skipping cleanup - already ran within 24 hours');
+        return;
+      }
+
+      console.log('[Chat] Running message cleanup...');
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -54,11 +70,19 @@ export default function Chat({ userName, setShowNameModal }) {
       );
 
       const snapshot = await getDocs(oldMessagesQuery);
-      const deletePromises = snapshot.docs.map((document) =>
-        deleteDoc(doc(db, "chat-messages", document.id))
-      );
 
-      await Promise.all(deletePromises);
+      if (snapshot.docs.length > 0) {
+        console.log(`[Chat] Deleting ${snapshot.docs.length} old messages`);
+        const deletePromises = snapshot.docs.map((document) =>
+          deleteDoc(doc(db, "chat-messages", document.id))
+        );
+        await Promise.all(deletePromises);
+      } else {
+        console.log('[Chat] No old messages to delete');
+      }
+
+      // Update last cleanup timestamp
+      localStorage.setItem('lastChatCleanup', now.toString());
     } catch (error) {
       console.error("Error cleaning up old messages:", error);
     }
@@ -77,8 +101,23 @@ export default function Chat({ userName, setShowNameModal }) {
     });
   }, []);
 
-  // Load messages with pagination (last 50 messages only to save reads)
+  // Run cleanup only once on component mount
   useEffect(() => {
+    cleanupOldMessages();
+  }, []); // Empty dependency array - runs only once
+
+  // Load messages with pagination (last 50 messages only to save reads)
+  // IMPORTANT: Empty dependency array to prevent reconnection loops
+  useEffect(() => {
+    // Prevent duplicate listener setup
+    if (listenerSetupRef.current) {
+      console.log('[Chat] Listener already set up, skipping');
+      return;
+    }
+
+    console.log('[Chat] Setting up SINGLE message listener (will NOT recreate)');
+    listenerSetupRef.current = true;
+
     const messagesCollectionRef = collection(db, "chat-messages");
     const messagesQuery = query(
       messagesCollectionRef,
@@ -87,53 +126,100 @@ export default function Chat({ userName, setShowNameModal }) {
     );
 
     let previousMessageCount = 0;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    let unsubscribe;
 
-    const unsubscribe = onSnapshot(
-      messagesQuery,
-      (snapshot) => {
-        const loadedMessages = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+    // Error handling with retry limit
+    const handleError = (error) => {
+      console.error("[Chat] Firestore listener error:", error);
+      console.error("[Chat] Error code:", error.code);
+      console.error("[Chat] Error message:", error.message);
 
-        // Reverse to show oldest first
-        const reversedMessages = loadedMessages.reverse();
+      retryCount++;
 
-        // Check if there's a new message (not initial load)
-        if (previousMessageCount > 0 && reversedMessages.length > previousMessageCount) {
-          const newMessage = reversedMessages[reversedMessages.length - 1]; // Latest message
+      if (retryCount >= MAX_RETRIES) {
+        console.error(`[Chat] Max retries (${MAX_RETRIES}) reached. Stopping listener.`);
+        setIsLoadingMessages(false);
+        listenerSetupRef.current = false;
 
-          // Show notification if it's not from current user and notifications are enabled
-          if (newMessage.userName !== userName && areNotificationsEnabled()) {
-            const messagePreview = newMessage.message
-              ? newMessage.message.substring(0, 50) + (newMessage.message.length > 50 ? '...' : '')
-              : 'Sent a message';
+        // Show error to user
+        alert(
+          'Failed to connect to chat after multiple attempts. Please refresh the page.'
+        );
 
-            showLocalNotification(
-              `${newMessage.userName} sent a message`,
-              messagePreview,
-              { type: 'chat', messageId: newMessage.id }
-            );
-          }
+        // Stop further attempts
+        if (unsubscribe) {
+          unsubscribe();
         }
-
-        previousMessageCount = reversedMessages.length;
-        setMessages(reversedMessages);
-        setIsLoadingMessages(false);
-        setTimeout(scrollToBottom, 100);
-      },
-      (error) => {
-        console.error("Error loading messages:", error);
-        setIsLoadingMessages(false);
+        return;
       }
-    );
 
-    // Cleanup old messages (older than 7 days) to save storage
-    cleanupOldMessages();
+      console.log(`[Chat] Retry ${retryCount}/${MAX_RETRIES}`);
+      setIsLoadingMessages(false);
+    };
+
+    try {
+      unsubscribe = onSnapshot(
+        messagesQuery,
+        {
+          // Add listener options to prevent excessive reconnections
+          includeMetadataChanges: false,
+        },
+        (snapshot) => {
+          // Reset retry count on successful connection
+          retryCount = 0;
+
+          const loadedMessages = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          // Reverse to show oldest first
+          const reversedMessages = loadedMessages.reverse();
+
+          // Check if there's a new message (not initial load)
+          if (previousMessageCount > 0 && reversedMessages.length > previousMessageCount) {
+            const latestMessage = reversedMessages[reversedMessages.length - 1];
+
+            // Get current userName from localStorage (since we can't use userName from closure)
+            const currentUserName = localStorage.getItem('userName');
+
+            // Show notification if it's not from current user and notifications are enabled
+            if (latestMessage.userName !== currentUserName && areNotificationsEnabled()) {
+              const messagePreview = latestMessage.text
+                ? latestMessage.text.substring(0, 50) + (latestMessage.text.length > 50 ? '...' : '')
+                : 'Sent a message';
+
+              showLocalNotification(
+                `${latestMessage.userName} sent a message`,
+                messagePreview,
+                { type: 'chat', messageId: latestMessage.id }
+              );
+            }
+          }
+
+          previousMessageCount = reversedMessages.length;
+          setMessages(reversedMessages);
+          setIsLoadingMessages(false);
+          setTimeout(scrollToBottom, 100);
+        },
+        handleError
+      );
+    } catch (error) {
+      console.error("[Chat] Failed to set up listener:", error);
+      handleError(error);
+    }
 
     // Detach listener on unmount to save resources
-    return () => unsubscribe();
-  }, [userName]);
+    return () => {
+      console.log('[Chat] Cleaning up message listener on unmount');
+      listenerSetupRef.current = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []); // EMPTY DEPS - only set up once, never recreate!
 
   // Send message
   const handleSendMessage = async (e) => {

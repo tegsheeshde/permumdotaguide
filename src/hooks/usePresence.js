@@ -18,12 +18,33 @@ export function usePresence(userName) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Don't set up presence if no userName
+    if (!userName || userName.trim() === '') {
+      console.log('[Presence] No userName provided, skipping presence setup');
+      return;
+    }
+
+    console.log('[Presence] Setting up presence for:', userName);
 
     const userStatusRef = ref(rtdb, `presence/${userName}`);
     const allPresenceRef = ref(rtdb, "presence");
 
+    // Track last update time to prevent spam
+    let lastUpdateTime = 0;
+    const UPDATE_THROTTLE = 5000; // 5 seconds minimum between updates
+
     // Set user as online
     const setUserOnline = async () => {
+      const now = Date.now();
+
+      // Throttle updates - don't update more than once per 5 seconds
+      if (now - lastUpdateTime < UPDATE_THROTTLE) {
+        console.log('[Presence] Update throttled, too soon since last update');
+        return;
+      }
+
+      lastUpdateTime = now;
+
       const userStatus = {
         state: "online",
         lastChanged: serverTimestamp(),
@@ -31,10 +52,11 @@ export function usePresence(userName) {
       };
 
       try {
+        console.log('[Presence] Setting user online');
         // Set user online
         await set(userStatusRef, userStatus);
 
-        // Set up disconnect handler
+        // Set up disconnect handler (only once)
         await onDisconnect(userStatusRef).set({
           state: "offline",
           lastChanged: serverTimestamp(),
@@ -56,46 +78,81 @@ export function usePresence(userName) {
     setUserOnline();
 
     // Listen to all users' presence
-    const unsubscribe = onValue(
-      allPresenceRef,
-      (snapshot) => {
-        const presenceData = snapshot.val() || {};
-        setOnlineUsers(presenceData);
-      },
-      (error) => {
-        console.error("❌ Error listening to presence:", error);
-        console.error("Error details:", error.message);
-      }
-    );
+    let unsubscribe;
+    try {
+      unsubscribe = onValue(
+        allPresenceRef,
+        (snapshot) => {
+          const presenceData = snapshot.val() || {};
+          setOnlineUsers(presenceData);
+        },
+        (error) => {
+          console.error("❌ Error listening to presence:", error);
+          console.error("Error details:", error.message);
+          if (error.code === "PERMISSION_DENIED") {
+            setError("PERMISSION_DENIED");
+          }
+        }
+      );
+    } catch (error) {
+      console.error("❌ Failed to set up presence listener:", error);
+      setError("DATABASE_NOT_ENABLED");
+      return; // Exit early if setup failed
+    }
 
-    // Handle page visibility changes
+    // Handle page visibility changes with debounce
+    let visibilityTimeout;
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        set(userStatusRef, {
-          state: "away",
-          lastChanged: serverTimestamp(),
-          userName: userName,
-        });
-      } else {
-        setUserOnline();
+      // Clear any pending visibility change
+      if (visibilityTimeout) {
+        clearTimeout(visibilityTimeout);
       }
+
+      // Debounce visibility changes by 1 second
+      visibilityTimeout = setTimeout(() => {
+        if (document.hidden) {
+          console.log('[Presence] Tab hidden, setting away');
+          set(userStatusRef, {
+            state: "away",
+            lastChanged: serverTimestamp(),
+            userName: userName,
+          }).catch(err => console.log('[Presence] Error setting away:', err.message));
+        } else {
+          console.log('[Presence] Tab visible, setting online');
+          setUserOnline();
+        }
+      }, 1000); // Wait 1 second before updating
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Cleanup
     return () => {
+      console.log('[Presence] Cleaning up presence for:', userName);
+
+      // Clear any pending visibility timeout
+      if (visibilityTimeout) {
+        clearTimeout(visibilityTimeout);
+      }
+
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      unsubscribe();
+
+      // Unsubscribe if listener was set up
+      if (unsubscribe) {
+        unsubscribe();
+      }
 
       // Set user offline on unmount
-      set(userStatusRef, {
-        state: "offline",
-        lastChanged: serverTimestamp(),
-        userName: userName,
-      }).catch(() => {
-        // Ignore errors on cleanup
-      });
+      if (userName && userName.trim() !== '') {
+        set(userStatusRef, {
+          state: "offline",
+          lastChanged: serverTimestamp(),
+          userName: userName,
+        }).catch((err) => {
+          // Ignore errors on cleanup
+          console.log('[Presence] Cleanup error (ignoring):', err.message);
+        });
+      }
     };
   }, [userName]);
 

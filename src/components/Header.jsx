@@ -66,7 +66,7 @@ export default function Header({
     { id: "feed", label: "Feed", icon: Image, color: "pink" },
     { id: "chat", label: "Chat", icon: MessageCircle, color: "green" },
     { id: "home", label: "Schedule", icon: VoteIcon, color: "orange" },
-    { id: "dashboard", label: "Analytics", icon: TrendingUp, color: "blue" },
+    { id: "dashboard", label: "Dashboard", icon: TrendingUp, color: "blue" },
     { id: "ai", label: "AI Assistant", icon: Bot, color: "pink" },
   ];
 
@@ -92,12 +92,25 @@ export default function Header({
     return colors[color] || colors.green;
   };
 
+  // Check if we're on the landing page
+  const isLandingPage = currentPage === "landing";
+
   return (
-    <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-2xl">
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${
+      isLandingPage
+        ? "bg-transparent backdrop-blur-none border-transparent"
+        : "bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-2xl"
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo/Brand */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div
+            className="flex items-center gap-3 flex-shrink-0 cursor-pointer"
+            onClick={() => isLandingPage
+              ? window.scrollTo({ top: 0, behavior: 'smooth' })
+              : setCurrentPage("landing")
+            }
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-linear-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center shadow-lg">
               <Swords className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
@@ -110,9 +123,10 @@ export default function Header({
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-2">
-            {/* Primary Navigation Items */}
-            {primaryNavItems.map((item) => {
+          {!isLandingPage && (
+            <nav className="hidden lg:flex items-center gap-2">
+              {/* Primary Navigation Items */}
+              {primaryNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentPage === item.id;
               return (
@@ -180,7 +194,18 @@ export default function Header({
                 </>
               )}
             </div>
-          </nav>
+            </nav>
+          )}
+
+          {/* Enter App Button (Landing Page Only) */}
+          {isLandingPage && (
+            <button
+              onClick={() => setCurrentPage("feed")}
+              className="hidden lg:block px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:scale-105 transition-transform shadow-lg"
+            >
+              Enter App
+            </button>
+          )}
 
           {/* User Profile Section */}
           <div className="flex items-center gap-3">
@@ -285,22 +310,31 @@ export default function Header({
               </div>
             )}
 
-            {/* Mobile Menu Toggle */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+            {/* Mobile Menu Toggle or Enter App Button */}
+            {isLandingPage ? (
+              <button
+                onClick={() => setCurrentPage("feed")}
+                className="lg:hidden px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold rounded-lg hover:scale-105 transition-transform shadow-lg"
+              >
+                Enter App
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        {isMobileMenuOpen && (
+        {isMobileMenuOpen && !isLandingPage && (
           <div className="lg:hidden pb-4 border-t border-slate-800 mt-2 pt-4">
             <nav className="space-y-1">
               {/* Primary Items */}

@@ -263,7 +263,8 @@
       "avg_assists": 21.756756756756758,
       "avg_gpm": 443.86486486486484,
       "avg_xpm": 599.7027027027027,
-      "win_rate": 59.46
+      "win_rate": 59.46,
+      "avatar": "/hero_avatars/ogre.png"
     },
     {
       "hero_name": "razor",
@@ -274,7 +275,8 @@
       "avg_assists": 18.258064516129032,
       "avg_gpm": 515.741935483871,
       "avg_xpm": 711.2258064516129,
-      "win_rate": 64.52
+      "win_rate": 64.52,
+      "avatar": "/hero_avatars/razor.png"
     },
     {
       "hero_name": "jakiro",
@@ -285,7 +287,8 @@
       "avg_assists": 21.392857142857142,
       "avg_gpm": 348.7857142857143,
       "avg_xpm": 560.6071428571429,
-      "win_rate": 57.14
+      "win_rate": 57.14,
+      "avatar": "/hero_avatars/jakiro.png"
     },
     {
       "hero_name": "vengeful",
@@ -296,7 +299,8 @@
       "avg_assists": 21.071428571428573,
       "avg_gpm": 323.17857142857144,
       "avg_xpm": 537.5714285714286,
-      "win_rate": 32.14
+      "win_rate": 32.14,
+      "avatar": "/hero_avatars/vengefulspirit.png"
     },
     {
       "hero_name": "witch doctor",
@@ -307,7 +311,8 @@
       "avg_assists": 17.807692307692307,
       "avg_gpm": 352.3076923076923,
       "avg_xpm": 469.0,
-      "win_rate": 53.85
+      "win_rate": 53.85,
+      "avatar": "/hero_avatars/witch_doctor.png"
     },
     {
       "hero_name": "invoker",
@@ -318,7 +323,8 @@
       "avg_assists": 15.391304347826088,
       "avg_gpm": 556.4347826086956,
       "avg_xpm": 726.4782608695652,
-      "win_rate": 52.17
+      "win_rate": 52.17,
+      "avatar": "/hero_avatars/invoker.png"
     },
     {
       "hero_name": "drow",
@@ -329,7 +335,8 @@
       "avg_assists": 12.818181818181818,
       "avg_gpm": 595.0454545454545,
       "avg_xpm": 778.2272727272727,
-      "win_rate": 40.91
+      "win_rate": 40.91,
+      "avatar": "/hero_avatars/drow.png"
     },
     {
       "hero_name": "qop",
@@ -340,7 +347,8 @@
       "avg_assists": 17.0,
       "avg_gpm": 595.4285714285714,
       "avg_xpm": 865.3809523809524,
-      "win_rate": 33.33
+      "win_rate": 33.33,
+      "avatar": "/hero_avatars/qop.png"
     },
     {
       "hero_name": "mars",
@@ -351,7 +359,8 @@
       "avg_assists": 20.85,
       "avg_gpm": 474.2,
       "avg_xpm": 664.5,
-      "win_rate": 65.0
+      "win_rate": 65.0,
+      "avatar": "/hero_avatars/mars.png"
     },
     {
       "hero_name": "sniper",
@@ -362,7 +371,8 @@
       "avg_assists": 17.45,
       "avg_gpm": 546.7,
       "avg_xpm": 662.0,
-      "win_rate": 60.0
+      "win_rate": 60.0,
+      "avatar": "/hero_avatars/sniper.png"
     },
     {
       "hero_name": "puck",
@@ -373,7 +383,8 @@
       "avg_assists": 17.0,
       "avg_gpm": 581.55,
       "avg_xpm": 829.95,
-      "win_rate": 40.0
+      "win_rate": 40.0,
+      "avatar": "/hero_avatars/puck.png"
     },
     {
       "hero_name": "axe",
@@ -384,7 +395,8 @@
       "avg_assists": 17.6,
       "avg_gpm": 457.25,
       "avg_xpm": 652.1,
-      "win_rate": 45.0
+      "win_rate": 45.0,
+      "avatar": "/hero_avatars/axe.png"
     },
     {
       "hero_name": "disruptor",
@@ -395,7 +407,8 @@
       "avg_assists": 25.736842105263158,
       "avg_gpm": 331.94736842105266,
       "avg_xpm": 532.8421052631579,
-      "win_rate": 52.63
+      "win_rate": 52.63,
+      "avatar": "/hero_avatars/disruptor.png"
     },
     {
       "hero_name": "hoodwink",
@@ -406,7 +419,8 @@
       "avg_assists": 21.05263157894737,
       "avg_gpm": 361.94736842105266,
       "avg_xpm": 584.3684210526316,
-      "win_rate": 31.58
+      "win_rate": 31.58,
+      "avatar": "/hero_avatars/hoodwink.png"
     },
     {
       "hero_name": "shaman",
@@ -417,7 +431,8 @@
       "avg_assists": 28.94736842105263,
       "avg_gpm": 357.94736842105266,
       "avg_xpm": 581.7368421052631,
-      "win_rate": 73.68
+      "win_rate": 73.68,
+      "avatar": "/hero_avatars/shaman.png"
     },
     {
       "hero_name": "silencer",
@@ -428,7 +443,8 @@
       "avg_assists": 22.210526315789473,
       "avg_gpm": 353.05263157894734,
       "avg_xpm": 534.7368421052631,
-      "win_rate": 68.42
+      "win_rate": 68.42,
+      "avatar": "/hero_avatars/silencer.png"
     },
     {
       "hero_name": "od",
@@ -439,7 +455,8 @@
       "avg_assists": 8.61111111111111,
       "avg_gpm": 519.6666666666666,
       "avg_xpm": 710.6666666666666,
-      "win_rate": 38.89
+      "win_rate": 38.89,
+      "avatar": "/hero_avatars/od.png"
     },
     {
       "hero_name": "medusa",
@@ -450,7 +467,8 @@
       "avg_assists": 15.470588235294118,
       "avg_gpm": 703.7647058823529,
       "avg_xpm": 948.1176470588235,
-      "win_rate": 64.71
+      "win_rate": 64.71,
+      "avatar": "/hero_avatars/medusa.png"
     },
     {
       "hero_name": "earthshaker",
@@ -461,7 +479,8 @@
       "avg_assists": 23.58823529411765,
       "avg_gpm": 450.47058823529414,
       "avg_xpm": 673.5882352941177,
-      "win_rate": 58.82
+      "win_rate": 58.82,
+      "avatar": "/hero_avatars/earthshaker.png"
     },
     {
       "hero_name": "dawnbreaker",
@@ -472,7 +491,8 @@
       "avg_assists": 18.3125,
       "avg_gpm": 512.4375,
       "avg_xpm": 687.9375,
-      "win_rate": 62.5
+      "win_rate": 62.5,
+      "avatar": "/hero_avatars/dawnbreaker.png"
     },
     {
       "hero_name": "abaddon",
@@ -483,7 +503,8 @@
       "avg_assists": 20.266666666666666,
       "avg_gpm": 451.53333333333336,
       "avg_xpm": 676.8666666666667,
-      "win_rate": 40.0
+      "win_rate": 40.0,
+      "avatar": "/hero_avatars/abaddon.png"
     },
     {
       "hero_name": "shadow demon",
@@ -494,7 +515,8 @@
       "avg_assists": 22.214285714285715,
       "avg_gpm": 338.7857142857143,
       "avg_xpm": 478.7142857142857,
-      "win_rate": 64.29
+      "win_rate": 64.29,
+      "avatar": "/hero_avatars/shadow_demon.png"
     },
     {
       "hero_name": "sf",
@@ -505,7 +527,8 @@
       "avg_assists": 12.076923076923077,
       "avg_gpm": 640.3076923076923,
       "avg_xpm": 852.3846153846154,
-      "win_rate": 61.54
+      "win_rate": 61.54,
+      "avatar": "/hero_avatars/sf.png"
     },
     {
       "hero_name": "lion",
@@ -516,7 +539,8 @@
       "avg_assists": 17.76923076923077,
       "avg_gpm": 305.6923076923077,
       "avg_xpm": 488.15384615384613,
-      "win_rate": 23.08
+      "win_rate": 23.08,
+      "avatar": "/hero_avatars/lion.png"
     },
     {
       "hero_name": "warlock",
@@ -527,7 +551,8 @@
       "avg_assists": 25.692307692307693,
       "avg_gpm": 348.6923076923077,
       "avg_xpm": 505.38461538461536,
-      "win_rate": 30.77
+      "win_rate": 30.77,
+      "avatar": "/hero_avatars/warlock.png"
     },
     {
       "hero_name": "lina",
@@ -538,7 +563,8 @@
       "avg_assists": 14.307692307692308,
       "avg_gpm": 669.0769230769231,
       "avg_xpm": 920.3076923076923,
-      "win_rate": 69.23
+      "win_rate": 69.23,
+      "avatar": "/hero_avatars/lina.png"
     },
     {
       "hero_name": "np",
@@ -549,7 +575,8 @@
       "avg_assists": 20.833333333333332,
       "avg_gpm": 705.5,
       "avg_xpm": 861.0833333333334,
-      "win_rate": 58.33
+      "win_rate": 58.33,
+      "avatar": "/hero_avatars/np.png"
     },
     {
       "hero_name": "gyro",
@@ -560,7 +587,8 @@
       "avg_assists": 15.25,
       "avg_gpm": 626.3333333333334,
       "avg_xpm": 744.25,
-      "win_rate": 58.33
+      "win_rate": 58.33,
+      "avatar": "/hero_avatars/gyro.png"
     },
     {
       "hero_name": "ursa",
@@ -571,7 +599,8 @@
       "avg_assists": 9.333333333333334,
       "avg_gpm": 580.0833333333334,
       "avg_xpm": 837.6666666666666,
-      "win_rate": 25.0
+      "win_rate": 25.0,
+      "avatar": "/hero_avatars/ursa.png"
     },
     {
       "hero_name": "underlord",
@@ -582,7 +611,8 @@
       "avg_assists": 20.90909090909091,
       "avg_gpm": 456.54545454545456,
       "avg_xpm": 623.5454545454545,
-      "win_rate": 54.55
+      "win_rate": 54.55,
+      "avatar": "/hero_avatars/underlord.png"
     }
   ],
   "overall_stats": {
