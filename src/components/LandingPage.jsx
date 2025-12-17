@@ -4,7 +4,7 @@ import { ChevronDown, Trophy, Users, Zap, TrendingUp, Award, Gamepad } from "luc
 import { useLandingData } from "../hooks/useLandingData";
 import AnimatedCounter from "./AnimatedCounter";
 import PlayerStatistics from "./PlayerStatistics";
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 
 /**
  * LandingPage Component
@@ -13,12 +13,22 @@ import { useRef, useMemo, useState } from "react";
 export default function LandingPage({ onEnterApp }) {
   const { stats, players, heroes, loading } = useLandingData();
 
+  // Ref for video element
+  const videoRef = useRef(null);
+
   // State for flip cards
   const [flippedCards, setFlippedCards] = useState({});
 
   // State for player statistics modal
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showPlayerStats, setShowPlayerStats] = useState(false);
+
+  // Set video start time to 8 seconds
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 8;
+    }
+  }, []);
 
   // Player-specific funny quotes with custom names
   const funnyQuotes = {
@@ -69,13 +79,13 @@ export default function LandingPage({ onEnterApp }) {
   // Background images for each section
   const backgroundImages = useMemo(
     () => [
-      "/backgrounds/bgimage7.jpg",
+      "/backgrounds/bgimage4.jpg",
       "/backgrounds/bgimage2.jpg",
       "/backgrounds/bgimage5.jpg",
       "/backgrounds/bgimage1.jpg",
       "/backgrounds/bgimage3.jpg",
       "/backgrounds/bgimage6.jpg",
-      "/backgrounds/bgimage4.jpg",
+      "/backgrounds/bgimage7.jpg",
       "/backgrounds/bgimage8.jpg",
     ],
     []
@@ -84,17 +94,21 @@ export default function LandingPage({ onEnterApp }) {
 
   return (
     <div className="relative w-full bg-slate-950">
-      {/* Hero Section with Video - Background Image 1 */}
+      {/* Hero Section with Video - Full Screen */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8">
-        {/* Scrolling Background */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${backgroundImages[0]})`,
-          }}
-        />
+        {/* Video Background */}
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/battle.mp4" type="video/mp4" />
+        </video>
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/80 to-slate-950/90" />
+        <div className="absolute inset-0 bg-linear-to-b from-slate-950/30 via-slate-900/40 to-slate-950/30" />
 
         {/* Content */}
         <div className="relative z-10 w-full">
@@ -354,7 +368,7 @@ export default function LandingPage({ onEnterApp }) {
           }}
         />
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/80 to-slate-950/90" />
+        <div className="absolute inset-0 bg-linear-to-b from-slate-950/60 via-slate-900/50 to-slate-950/60" />
 
         {/* Content */}
         <div className="relative z-10">
@@ -929,7 +943,7 @@ export default function LandingPage({ onEnterApp }) {
           }}
         />
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/80 to-slate-950/90" />
+        <div className="absolute inset-0 bg-linear-to-b from-slate-950/30 via-slate-900/40 to-slate-950/40" />
 
         {/* Content */}
         <motion.div
@@ -1091,7 +1105,7 @@ function DisclaimerSection({ backgroundImage }) {
       />
       {/* Dark overlay - gets darker as you scroll */}
       <motion.div
-        className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/80 to-slate-950/90"
+        className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/50 to-slate-950/70"
         style={{
           opacity: useTransform(scrollYProgress, [0, 0.3, 0.5], [0.7, 0.9, 1])
         }}
