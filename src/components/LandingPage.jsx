@@ -31,6 +31,9 @@ export default function LandingPage({ onEnterApp }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showPlayerStats, setShowPlayerStats] = useState(false);
 
+  // State for button hover effect
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+
   // Set video start time to 8 seconds
   useEffect(() => {
     if (videoRef.current) {
@@ -1029,9 +1032,11 @@ export default function LandingPage({ onEnterApp }) {
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 pb-20">
         {/* Scrolling Background */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center transition-all duration-500"
           style={{
-            backgroundImage: `url(${backgroundImages[6]})`,
+            backgroundImage: isButtonHovered
+              ? `url(/backgrounds/devilam.png)`
+              : `url(${backgroundImages[6]})`,
           }}
         />
         {/* Dark overlay */}
@@ -1045,16 +1050,49 @@ export default function LandingPage({ onEnterApp }) {
           transition={{ duration: 0.8 }}
           className="relative z-10 text-center"
         >
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-8">
-            Ready to Join noob?
-          </h2>
+          <motion.h2
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-8"
+            animate={{
+              textShadow: [
+                "0 0 20px rgba(138, 43, 226, 0.8), 0 0 40px rgba(138, 43, 226, 0.6), 3px 3px 0px rgba(255, 0, 0, 0.4), -3px -3px 0px rgba(0, 255, 255, 0.4)",
+                "0 0 30px rgba(236, 72, 153, 0.8), 0 0 50px rgba(236, 72, 153, 0.6), -3px -3px 0px rgba(255, 0, 0, 0.4), 3px 3px 0px rgba(0, 255, 255, 0.4)",
+                "0 0 20px rgba(138, 43, 226, 0.8), 0 0 40px rgba(138, 43, 226, 0.6), 3px 3px 0px rgba(255, 0, 0, 0.4), -3px -3px 0px rgba(0, 255, 255, 0.4)",
+              ],
+              scale: [1, 1.02, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            Ready to Join toxic community?
+          </motion.h2>
           <motion.button
             onClick={onEnterApp}
-            whileHover={{ scale: 1.05 }}
+            onMouseEnter={() => setIsButtonHovered(true)}
+            onMouseLeave={() => setIsButtonHovered(false)}
+            whileHover={{
+              textShadow: [
+                "0.05em 0 0 rgba(255, 0, 0, 0.75), -0.025em -0.05em 0 rgba(0, 255, 0, 0.75), 0.025em 0.05em 0 rgba(0, 0, 255, 0.75)",
+                "0.05em 0 0 rgba(255, 0, 0, 0.75), -0.025em -0.05em 0 rgba(0, 255, 0, 0.75), 0.025em 0.05em 0 rgba(0, 0, 255, 0.75)",
+              ],
+              x: [0, -12, -12, 12, 12, 0],
+              y: [0, 12, -12, 12, -12, 0],
+            }}
+            transition={{
+              duration: 0.1,
+              repeat: Infinity,
+              repeatType: "loop",
+            }}
             whileTap={{ scale: 0.95 }}
-            className="px-12 py-6 bg-linear-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-2xl shadow-2xl hover:shadow-purple-500/50 transition-all"
+            className="px-12 py-6 bg-linear-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-lg border-2 border-[#6166cff] cursor-pointer transition-all"
+            style={{
+              position: "relative",
+              overflow: "hidden",
+            }}
           >
-            Enter Toxic Community
+            Are you sure ?
           </motion.button>
         </motion.div>
       </section>
@@ -1085,7 +1123,7 @@ function DisclaimerSection({ backgroundImage }) {
   });
 
   const words = useMemo(
-    () => "This site will not improve your MMR Sorry.".split(" "),
+    () => "This site will not improve your mmr Sorry.".split(" "),
     []
   );
 
@@ -1373,9 +1411,11 @@ function DisclaimerSection({ backgroundImage }) {
                     rotate: wind.rotation,
                     display: "inline-block",
                     position: "relative",
-                    fontFamily: "'Roboto', sans-serif",
+                    fontFamily: "'Cinzel Decorative', 'Uncial Antiqua', 'Luminari', 'Papyrus', 'Copperplate', serif",
+                    color: "#d4af37",
+                    letterSpacing: "0.08em",
                   }}
-                  className="text-4xl sm:text-5xl lg:text-6xl text-white"
+                  className="text-4xl sm:text-5xl lg:text-6xl font-bold"
                 >
                   {word}
                 </motion.span>

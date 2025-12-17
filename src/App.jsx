@@ -108,7 +108,7 @@ export default function App() {
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `url(/backgrounds/dotawallpapers.com-wei-the-anti-mage-from-dota-2-3d-image-3840x2160.jpg)`,
+              backgroundImage: `url(/backgrounds/devilams.png)`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               backgroundAttachment: "fixed",
