@@ -3,7 +3,8 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown, Trophy, Users, Zap, TrendingUp, Award, Gamepad } from "lucide-react";
 import { useLandingData } from "../hooks/useLandingData";
 import AnimatedCounter from "./AnimatedCounter";
-import { useRef, useMemo, useState, useEffect } from "react";
+import PlayerStatistics from "./PlayerStatistics";
+import { useRef, useMemo, useState } from "react";
 
 /**
  * LandingPage Component
@@ -14,8 +15,10 @@ export default function LandingPage({ onEnterApp }) {
 
   // State for flip cards
   const [flippedCards, setFlippedCards] = useState({});
-  const [hasShownDemo, setHasShownDemo] = useState(false);
-  const leaderboardRef = useRef(null);
+
+  // State for player statistics modal
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [showPlayerStats, setShowPlayerStats] = useState(false);
 
   // Player-specific funny quotes with custom names
   const funnyQuotes = {
@@ -31,54 +34,49 @@ export default function LandingPage({ onEnterApp }) {
     "Brown OO": { quote: "Playing Dota vs enemy team and my PC.", name: "Magnai" }
   };
 
-  const toggleCard = (playerName) => {
+  // Hover handlers for card flipping
+  const handleCardHover = (playerName, isHovering) => {
     setFlippedCards(prev => ({
       ...prev,
-      [playerName]: !prev[playerName]
+      [playerName]: isHovering
     }));
   };
 
-  // Auto-flip first card as a demo when leaderboard comes into view
-  useEffect(() => {
-    if (hasShownDemo || !players.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          // Wait a bit, then flip the first card
-          setTimeout(() => {
-            const firstPlayerName = players[0]?.name;
-            if (firstPlayerName) {
-              toggleCard(firstPlayerName);
-              // Flip it back after 3 seconds
-              setTimeout(() => {
-                toggleCard(firstPlayerName);
-                setHasShownDemo(true);
-              }, 3000);
-            }
-          }, 800);
-        }
-      },
-      { threshold: 0.3 }
-    );
-
-    if (leaderboardRef.current) {
-      observer.observe(leaderboardRef.current);
+  // Get rank name from rank_tier or string
+  const getRankName = (rankTier) => {
+    if (!rankTier) return "Unranked";
+    // Handle manual string ranks (e.g., "archon")
+    if (typeof rankTier === "string") {
+      return rankTier.charAt(0).toUpperCase() + rankTier.slice(1);
     }
-
-    return () => observer.disconnect();
-  }, [players, hasShownDemo]);
+    // Handle OpenDota rank tiers (number)
+    const ranks = [
+      "Herald",
+      "Guardian",
+      "Crusader",
+      "Archon",
+      "Legend",
+      "Ancient",
+      "Divine",
+      "Immortal",
+    ];
+    const tier = Math.floor(rankTier / 10);
+    const star = rankTier % 10;
+    if (tier === 8) return `Immortal ${star > 0 ? `#${star}` : ""}`;
+    return `${ranks[tier - 1]} ${star}`;
+  };
 
   // Background images for each section
   const backgroundImages = useMemo(
     () => [
-      "/backgrounds/dotawallpapers.com-wei-the-anti-mage-from-dota-2-3d-image-3840x2160.jpg",
-      "/backgrounds/dotawallpapers.com-dota-2-anime-girl-windranger-3840x2626.jpg",
-      "/backgrounds/dotawallpapers.com-hot-marci-model-in-a-golden-dress-fan-art-4k-3840x2626.jpg",
-      "/backgrounds/dotawallpapers.com-lanaya-ganking-bdsm-dota-2-game-art-1824x1248.jpg",
-      "/backgrounds/dotawallpapers.com-little-devil-marci-sexy-wallpaper-4k-3888x2656.jpg",
-      "/backgrounds/dotawallpapers.com-marci-at-the-pool-fan-art-5000x3426.jpg",
-      "/backgrounds/dotawallpapers.com-marci-with-drow-ranger-cute-fan-art-1600x1131.jpg",
+      "/backgrounds/bgimage7.jpg",
+      "/backgrounds/bgimage2.jpg",
+      "/backgrounds/bgimage5.jpg",
+      "/backgrounds/bgimage1.jpg",
+      "/backgrounds/bgimage3.jpg",
+      "/backgrounds/bgimage6.jpg",
+      "/backgrounds/bgimage4.jpg",
+      "/backgrounds/bgimage8.jpg",
     ],
     []
   );
@@ -143,7 +141,7 @@ export default function LandingPage({ onEnterApp }) {
 
             {/* Subtitle */}
             <div className="mb-10">
-              <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+              <p className="text-2xl sm:text-4xl lg:text-xl font-light text-white">
                 {"Your Dota 2 Toxic Community".split("").map((char, index) => (
                   <motion.span
                     key={index}
@@ -162,7 +160,7 @@ export default function LandingPage({ onEnterApp }) {
                     }}
                     style={{
                       display: "inline-block",
-                      background: "linear-gradient(135deg, #e0e7ff, #e0e7ff, #000)",
+                      background: "linear-gradient(135deg, #fff, #fff, #fff)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
@@ -173,19 +171,6 @@ export default function LandingPage({ onEnterApp }) {
                 ))}
               </p>
             </div>
-
-            {/* Live Player Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="inline-flex items-center gap-3 px-6 py-3 bg-slate-800/60 backdrop-blur-md rounded-full border border-green-500/30"
-            >
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse-slow" />
-              <span className="text-lg font-semibold text-white">
-                {stats.onlineCount} Player{stats.onlineCount !== 1 ? "s" : ""} Online
-              </span>
-            </motion.div>
           </motion.div>
 
           {/* Scroll Indicator */}
@@ -193,7 +178,7 @@ export default function LandingPage({ onEnterApp }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.6 }}
-            className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+            className="absolute bottom-[-14] left-1/2 transform -translate-x-1/2"
           >
             <motion.div
               animate={{ y: [0, 10, 0] }}
@@ -207,39 +192,6 @@ export default function LandingPage({ onEnterApp }) {
         </div>
       </section>
 
-      {/* Video Section - Full Screen */}
-      <section className="relative h-screen flex items-center justify-center px-0 py-0 overflow-hidden">
-        {/* Scrolling Background */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${backgroundImages[1]})`,
-          }}
-        />
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/60" />
-
-        {/* Video Player - Full Section */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative z-10 w-full h-full"
-        >
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover"
-          >
-            <source src="/dota2movie.mp4" type="video/mp4" />
-          </video>
-        </motion.div>
-      </section>
-
-      {/* Live Stats Section - Background Image 3 */}
       <section className="relative min-h-screen py-32 sm:py-48 px-4 flex items-center">
         {/* Scrolling Background */}
         <div
@@ -285,7 +237,7 @@ export default function LandingPage({ onEnterApp }) {
               {/* Animated underline */}
               <motion.div
                 initial={{ width: 0 }}
-                whileInView={{ width: "200px" }}
+                whileInView={{ width: "600px" }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: 1.2 }}
                 className="h-1 bg-linear-to-r from-purple-600 via-pink-600 to-orange-600 mx-auto mt-6 rounded-full"
@@ -354,6 +306,41 @@ export default function LandingPage({ onEnterApp }) {
         </div>
       </section>
 
+      {/* Video Section - Full Screen */}
+      <section className="relative h-screen flex items-center justify-center px-0 py-0 overflow-hidden">
+        {/* Scrolling Background */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${backgroundImages[1]})`,
+          }}
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/60" />
+
+        {/* Video Player - Full Section */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="relative z-10 w-full h-full"
+        >
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+          >
+            <source src="/dota2movie.mp4" type="video/mp4" />
+          </video>
+        </motion.div>
+      </section>
+
+      {/* Live Stats Section - Background Image 3 */}
+      
+
       {/* Disclaimer Message - Scroll-based Word Animation - Background Image 4 */}
       <DisclaimerSection backgroundImage={backgroundImages[3]} />
 
@@ -403,7 +390,7 @@ export default function LandingPage({ onEnterApp }) {
               {/* Animated underline */}
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                whileInView={{ width: "250px", opacity: 1 }}
+                whileInView={{ width: "800px", opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 1, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
                 className="h-1 bg-linear-to-r from-yellow-500 via-orange-500 to-red-500 mx-auto mt-6 rounded-full"
@@ -435,11 +422,6 @@ export default function LandingPage({ onEnterApp }) {
                   const playerImageFilename = player.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_');
                   const playerImage = `/player_images/${playerImageFilename}.jpg`;
 
-                  // Debug: Log expected filename
-                  if (index < 3) { // Only log first 3 to avoid spam
-                    console.log(`Player: "${player.name}" → Expected file: ${playerImageFilename}.jpg`);
-                  }
-
                   return (
                     <motion.div
                       key={player.name}
@@ -464,7 +446,12 @@ export default function LandingPage({ onEnterApp }) {
                         ease: [0.22, 1, 0.36, 1],
                         filter: { duration: 0.6 }
                       }}
-                      onClick={() => toggleCard(player.name)}
+                      onMouseEnter={() => handleCardHover(player.name, true)}
+                      onMouseLeave={() => handleCardHover(player.name, false)}
+                      onClick={() => {
+                        setSelectedPlayer(player.name);
+                        setShowPlayerStats(true);
+                      }}
                       className="cursor-pointer"
                       style={{
                         perspective: "1500px"
@@ -484,14 +471,16 @@ export default function LandingPage({ onEnterApp }) {
                       >
                         {/* FRONT OF CARD */}
                         <div
-                          className={`absolute inset-0 w-full h-full bg-slate-800/40 backdrop-blur-md rounded-2xl p-6 border ${
+                          className={`absolute inset-0 w-full h-full bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border ${
                             isTopThree
                               ? "border-yellow-500/30"
                               : "border-slate-700/50"
                           } transition-all overflow-hidden`}
                           style={{
                             backfaceVisibility: "hidden",
-                            WebkitBackfaceVisibility: "hidden"
+                            WebkitBackfaceVisibility: "hidden",
+                            backdropFilter: "blur(20px)",
+                            WebkitBackdropFilter: "blur(20px)"
                           }}
                         >
                       {/* Animated shimmer for top 3 */}
@@ -590,9 +579,9 @@ export default function LandingPage({ onEnterApp }) {
                             }}
                           />
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <motion.h3
-                            className="text-xl font-bold text-white mb-1"
+                            className="text-base font-bold text-white truncate"
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 1 }}
                             viewport={{ once: true }}
@@ -601,7 +590,16 @@ export default function LandingPage({ onEnterApp }) {
                             {player.name}
                           </motion.h3>
                           <motion.div
-                            className="flex items-center gap-3 text-sm"
+                            className="text-xs text-yellow-400 font-medium mb-1"
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: index * 0.1 + 0.55 }}
+                          >
+                            {getRankName(player.rank)}
+                          </motion.div>
+                          <motion.div
+                            className="flex items-center gap-2 text-xs flex-wrap"
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 1 }}
                             viewport={{ once: true }}
@@ -610,9 +608,28 @@ export default function LandingPage({ onEnterApp }) {
                             <span className="text-cyan-400 font-semibold">
                               {player.mmr} MMR
                             </span>
-                            <span className="text-slate-400">•</span>
-                            <span className="text-green-400">
+                            <span className="text-slate-600">•</span>
+                            <span className="text-green-400 font-semibold">
                               {(Number(player?.winRate) || 0).toFixed(1)}% WR
+                            </span>
+                          </motion.div>
+                          <motion.div
+                            className="flex items-center gap-2 text-xs mt-0.5"
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: index * 0.1 + 0.65 }}
+                          >
+                            <span className="text-slate-400">
+                              {player.totalGames || 0} games
+                            </span>
+                            <span className="text-slate-600">•</span>
+                            <span className="text-green-400">
+                              {player.wins || 0}W
+                            </span>
+                            <span className="text-slate-600">/</span>
+                            <span className="text-red-400">
+                              {player.losses || 0}L
                             </span>
                           </motion.div>
                         </div>
@@ -621,7 +638,7 @@ export default function LandingPage({ onEnterApp }) {
 
                         {/* BACK OF CARD */}
                         <div
-                          className={`absolute inset-0 w-full h-full bg-slate-800/60 backdrop-blur-md rounded-2xl p-4 border ${
+                          className={`absolute inset-0 w-full h-full bg-slate-800/50 backdrop-blur-xl rounded-2xl p-4 border ${
                             isTopThree
                               ? "border-yellow-500/30"
                               : "border-slate-700/50"
@@ -629,7 +646,9 @@ export default function LandingPage({ onEnterApp }) {
                           style={{
                             backfaceVisibility: "hidden",
                             WebkitBackfaceVisibility: "hidden",
-                            transform: "rotateY(180deg)"
+                            transform: "rotateY(180deg)",
+                            backdropFilter: "blur(20px)",
+                            WebkitBackdropFilter: "blur(20px)"
                           }}
                         >
                           {/* Player Photo - Left Side */}
@@ -638,11 +657,7 @@ export default function LandingPage({ onEnterApp }) {
                               src={playerImage}
                               alt={player.name}
                               className="w-full h-full object-cover relative z-10"
-                              onLoad={() => {
-                                console.log(`✅ Image loaded: ${playerImage}`);
-                              }}
                               onError={(e) => {
-                                console.log(`❌ Failed to load: ${playerImage}`);
                                 e.target.style.display = 'none';
                                 const fallback = e.target.parentElement.querySelector('.fallback-gradient');
                                 if (fallback) fallback.style.display = 'flex';
@@ -732,7 +747,7 @@ export default function LandingPage({ onEnterApp }) {
               {/* Animated underline */}
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                whileInView={{ width: "220px", opacity: 1 }}
+                whileInView={{ width: "560px", opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="h-1 bg-linear-to-r from-purple-500 via-pink-500 to-red-500 mx-auto mt-6 rounded-full"
@@ -905,7 +920,7 @@ export default function LandingPage({ onEnterApp }) {
       </section>
 
       {/* CTA Section - Background Image 7 */}
-      <section className="relative min-h-[60vh] flex flex-col items-center justify-center px-4 pb-20">
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 pb-20">
         {/* Scrolling Background */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -933,10 +948,20 @@ export default function LandingPage({ onEnterApp }) {
               whileTap={{ scale: 0.95 }}
               className="px-12 py-6 bg-linear-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-2xl shadow-2xl hover:shadow-purple-500/50 transition-all"
             >
-              Enter Toxic Community 
+              Enter Toxic Community
             </motion.button>
           </motion.div>
       </section>
+
+      {/* Player Statistics Modal */}
+      <PlayerStatistics
+        playerName={selectedPlayer}
+        isOpen={showPlayerStats}
+        onClose={() => {
+          setShowPlayerStats(false);
+          setSelectedPlayer(null);
+        }}
+      />
     </div>
   );
 }
@@ -954,7 +979,7 @@ function DisclaimerSection({ backgroundImage }) {
   });
 
   const words = useMemo(
-    () => "This site will not improve your MMR. Sorry.".split(" "),
+    () => "This site will not improve your MMR Sorry.".split(" "),
     []
   );
 
@@ -962,14 +987,19 @@ function DisclaimerSection({ backgroundImage }) {
   // Using useState with lazy initializer to avoid impure function in render
   const [randomPositions] = useState(() =>
     words.map(() => ({
-      x: (Math.random() - 0.5) * 1200, // Random X between -600 and 600 (wider spread)
-      y: (Math.random() - 0.5) * 800, // Random Y between -400 and 400 (taller spread)
+      x: (Math.random() - 0.8) * 700, // Random X between -600 and 600 (wider spread)
+      y: (Math.random() - 0.2) * 500, // Random Y between -400 and 400 (taller spread)
     }))
+  );
+
+  // Generate random rotation amounts for wind scatter effect (consistent across renders)
+  const [randomRotations] = useState(() =>
+    words.map(() => (Math.random() - 0.5) * 90)
   );
 
   // Lower value = slower animation (spreads animation across more scroll distance)
   // 0.5 means animation completes at 50% scroll progress through section
-  const animationSpeed = 0.5;
+  const animationSpeed = 0.6;
   const numWords = words.length;
 
   const word0 = useWordAnimation(scrollYProgress, randomPositions[0], 0, numWords, animationSpeed);
@@ -983,42 +1013,126 @@ function DisclaimerSection({ backgroundImage }) {
 
   const wordAnimations = [word0, word1, word2, word3, word4, word5, word6, word7];
 
+  // Sand wind effect - words fade and scatter away after forming sentence
+  const windOpacity = useTransform(scrollYProgress, [0.6, 0.8, 1], [1, 1, 0]);
+  const windScatter = useTransform(scrollYProgress, [0.6, 1], [0, 1]);
+
+  // Create wind scatter transforms for each word individually (hooks can't be in loops)
+  const wind0X = useTransform(windScatter, [0, 1], [0, randomPositions[0].x * 2]);
+  const wind0Y = useTransform(windScatter, [0, 1], [0, randomPositions[0].y * 2]);
+  const wind0Rot = useTransform(windScatter, [0, 1], [0, randomRotations[0]]);
+
+  const wind1X = useTransform(windScatter, [0, 1], [0, randomPositions[1].x * 2]);
+  const wind1Y = useTransform(windScatter, [0, 1], [0, randomPositions[1].y * 2]);
+  const wind1Rot = useTransform(windScatter, [0, 1], [0, randomRotations[1]]);
+
+  const wind2X = useTransform(windScatter, [0, 1], [0, randomPositions[2].x * 2]);
+  const wind2Y = useTransform(windScatter, [0, 1], [0, randomPositions[2].y * 2]);
+  const wind2Rot = useTransform(windScatter, [0, 1], [0, randomRotations[2]]);
+
+  const wind3X = useTransform(windScatter, [0, 1], [0, randomPositions[3].x * 2]);
+  const wind3Y = useTransform(windScatter, [0, 1], [0, randomPositions[3].y * 2]);
+  const wind3Rot = useTransform(windScatter, [0, 1], [0, randomRotations[3]]);
+
+  const wind4X = useTransform(windScatter, [0, 1], [0, randomPositions[4].x * 2]);
+  const wind4Y = useTransform(windScatter, [0, 1], [0, randomPositions[4].y * 2]);
+  const wind4Rot = useTransform(windScatter, [0, 1], [0, randomRotations[4]]);
+
+  const wind5X = useTransform(windScatter, [0, 1], [0, randomPositions[5].x * 2]);
+  const wind5Y = useTransform(windScatter, [0, 1], [0, randomPositions[5].y * 2]);
+  const wind5Rot = useTransform(windScatter, [0, 1], [0, randomRotations[5]]);
+
+  const wind6X = useTransform(windScatter, [0, 1], [0, randomPositions[6].x * 2]);
+  const wind6Y = useTransform(windScatter, [0, 1], [0, randomPositions[6].y * 2]);
+  const wind6Rot = useTransform(windScatter, [0, 1], [0, randomRotations[6]]);
+
+  const wind7X = useTransform(windScatter, [0, 1], [0, randomPositions[7].x * 2]);
+  const wind7Y = useTransform(windScatter, [0, 1], [0, randomPositions[7].y * 2]);
+  const wind7Rot = useTransform(windScatter, [0, 1], [0, randomRotations[7]]);
+
+  // Create combined opacity transforms (word fade-in * wind fade-out)
+  const combinedOpacity0 = useTransform([word0.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity1 = useTransform([word1.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity2 = useTransform([word2.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity3 = useTransform([word3.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity4 = useTransform([word4.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity5 = useTransform([word5.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity6 = useTransform([word6.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity7 = useTransform([word7.opacity, windOpacity], ([base, wind]) => base * wind);
+
+  const windTransforms = [
+    { x: wind0X, y: wind0Y, rotation: wind0Rot, opacity: combinedOpacity0 },
+    { x: wind1X, y: wind1Y, rotation: wind1Rot, opacity: combinedOpacity1 },
+    { x: wind2X, y: wind2Y, rotation: wind2Rot, opacity: combinedOpacity2 },
+    { x: wind3X, y: wind3Y, rotation: wind3Rot, opacity: combinedOpacity3 },
+    { x: wind4X, y: wind4Y, rotation: wind4Rot, opacity: combinedOpacity4 },
+    { x: wind5X, y: wind5Y, rotation: wind5Rot, opacity: combinedOpacity5 },
+    { x: wind6X, y: wind6Y, rotation: wind6Rot, opacity: combinedOpacity6 },
+    { x: wind7X, y: wind7Y, rotation: wind7Rot, opacity: combinedOpacity7 }
+  ];
+
   return (
     <section ref={sectionRef} className="relative px-4 min-h-[3000px]">
-      {/* Fixed centered background - doesn't move with scroll */}
-      <div
+      {/* First background - fades out as you scroll */}
+      <motion.div
         className="absolute inset-0 bg-cover bg-center bg-fixed"
         style={{
           backgroundImage: `url(${backgroundImage})`,
+          opacity: useTransform(scrollYProgress, [0, 0.5, 0.7], [1, 1, 0])
         }}
       />
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/80 to-slate-950/90" />
+      {/* Second background - fades in as you scroll */}
+      <motion.div
+        className="absolute inset-0 bg-cover bg-center bg-fixed"
+        style={{
+          backgroundImage: `url(/backgrounds/bgimage8.jpg)`,
+          opacity: useTransform(scrollYProgress, [0.5, 0.7, 1], [0, 1, 1])
+        }}
+      />
+      {/* Dark overlay - gets darker as you scroll */}
+      <motion.div
+        className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/80 to-slate-950/90"
+        style={{
+          opacity: useTransform(scrollYProgress, [0, 0.3, 0.5], [0.7, 0.9, 1])
+        }}
+      />
 
       {/* Content - Sticky container keeps text centered while animating */}
       <div className="sticky top-1/2 -translate-y-1/2 z-10 max-w-6xl mx-auto py-32">
         <div className="relative w-full text-center min-h-[200px] flex items-center justify-center">
           <div className="flex flex-wrap justify-center items-center gap-x-3">
-            {words.map((word, index) => (
-              <motion.span
-                key={index}
-                style={{
-                  x: wordAnimations[index].x,
-                  y: wordAnimations[index].y,
-                  opacity: wordAnimations[index].opacity,
-                  display: "inline-block",
-                  position: "relative",
-                }}
-                className="text-4xl sm:text-5xl lg:text-6xl text-white italic font-bold"
-              >
-                {word}
-              </motion.span>
-            ))}
+            {words.map((word, index) => {
+              // Get pre-created wind transforms for this word
+              const wind = windTransforms[index];
+              const wordAnim = wordAnimations[index];
+
+              return (
+                <motion.span
+                  key={index}
+                  style={{
+                    // Base position animation (random to center)
+                    x: wordAnim.x,
+                    y: wordAnim.y,
+                    // Wind scatter effect (additional translation)
+                    translateX: wind.x,
+                    translateY: wind.y,
+                    // Combined opacity (word fade-in * wind fade-out)
+                    opacity: wind.opacity,
+                    // Wind rotation
+                    rotate: wind.rotation,
+                    display: "inline-block",
+                    position: "relative",
+                    fontFamily: "'Roboto', sans-serif"
+                  }}
+                  className="text-4xl sm:text-5xl lg:text-6xl text-white"
+                >
+                  {word}
+                </motion.span>
+              );
+            })}
           </div>
         </div>
       </div>
-
-      {/* Extra space at bottom to allow full sentence to display before next section */}
       <div className="h-[1000px]" />
     </section>
   );
