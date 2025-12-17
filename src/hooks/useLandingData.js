@@ -35,7 +35,7 @@ export function useLandingData() {
               const playersList = docSnap.data().list || {};
               const totalPlayers = Object.keys(playersList).length;
 
-              // Sort players by MMR and get top 10
+              // Sort players by MMR (all players)
               const topPlayers = Object.entries(playersList)
                 .map(([name, data]) => ({
                   name,
@@ -45,8 +45,7 @@ export function useLandingData() {
                   winRate: data.winRate || 0,
                   totalGames: data.totalGames || 0,
                 }))
-                .sort((a, b) => (b.mmr || 0) - (a.mmr || 0))
-                .slice(0, 10);
+                .sort((a, b) => (b.mmr || 0) - (a.mmr || 0));
 
               setPlayers(topPlayers);
               setStats((prev) => ({ ...prev, totalPlayers }));

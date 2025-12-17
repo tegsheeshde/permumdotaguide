@@ -1,6 +1,14 @@
 // eslint-disable-next-line no-unused-vars
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ChevronDown, Trophy, Users, Zap, TrendingUp, Award, Gamepad } from "lucide-react";
+import {
+  ChevronDown,
+  Trophy,
+  Users,
+  Zap,
+  TrendingUp,
+  Award,
+  Gamepad,
+} from "lucide-react";
 import { useLandingData } from "../hooks/useLandingData";
 import AnimatedCounter from "./AnimatedCounter";
 import PlayerStatistics from "./PlayerStatistics";
@@ -32,23 +40,37 @@ export default function LandingPage({ onEnterApp }) {
 
   // Player-specific funny quotes with custom names
   const funnyQuotes = {
-    "humbledog": { quote: "Predicts everything… except the gank.", name: "Tebo" },
+    humbledog: { quote: "Predicts everything… except the gank.", name: "Tebo" },
     "@Nine.!": { quote: "God of Oracle but God from Temu", name: "Purevee" },
-    "Elchapo": { quote: "It's not my fault", name: "Tegshee" },
-    "xaky": { quote: "Feeding is just aggressive warding", name: "Tuguldur" },
+    asdf: {
+      quote: "I don’t tilt. I communicate with my table.",
+      name: "Khashaa",
+    },
+    Elchapo: { quote: "It's not my fault", name: "Tegshee" },
+    xaky: { quote: "Feeding is just aggressive warding", name: "Tuguldur" },
     ".911": { quote: "Immortal brain, disconnected hands.", name: "Nimqa" },
-    "Woody": { quote: "Tilting is my warm-up routine", name: "Khasaa" },
-    "Orgil": { quote: "I'm not feeding, I'm scouting!", name: "Orgil" },
-    "Khume": { quote: "Professional explainer, part-time player.", name: "Khuslen" },
-    "Rozigoo": { quote: "Supporting the team by farming.", name: "Zorigoo" },
-    "Brown OO": { quote: "Playing Dota vs enemy team and my PC.", name: "Magnai" }
+    Woody: { quote: "Tilting is my warm-up routine", name: "Khasaa" },
+    Orgil: { quote: "I'm not feeding, I'm scouting!", name: "Orgil" },
+    Khume: {
+      quote: "Professional explainer, part-time player.",
+      name: "Khuslen",
+    },
+    Rozigoo: { quote: "Supporting the team by farming.", name: "Zorigoo" },
+    "Brown OO": {
+      quote: "Playing Dota vs enemy team and my PC.",
+      name: "Magnai",
+    },
+    MiRaGS: {
+      quote: "I don’t talk. I rotate.",
+      name: "Jack",
+    },
   };
 
   // Hover handlers for card flipping
   const handleCardHover = (playerName, isHovering) => {
-    setFlippedCards(prev => ({
+    setFlippedCards((prev) => ({
       ...prev,
-      [playerName]: isHovering
+      [playerName]: isHovering,
     }));
   };
 
@@ -90,7 +112,6 @@ export default function LandingPage({ onEnterApp }) {
     ],
     []
   );
-
 
   return (
     <div className="relative w-full bg-slate-950">
@@ -139,7 +160,8 @@ export default function LandingPage({ onEnterApp }) {
                     }}
                     className="inline-block"
                     style={{
-                      background: "linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f97316 100%)",
+                      background:
+                        "linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f97316 100%)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
@@ -237,11 +259,11 @@ export default function LandingPage({ onEnterApp }) {
                     transition={{
                       duration: 0.3,
                       delay: index * 0.05,
-                      ease: "easeOut"
+                      ease: "easeOut",
                     }}
                     style={{
                       display: "inline-block",
-                      whiteSpace: char === " " ? "pre" : "normal"
+                      whiteSpace: char === " " ? "pre" : "normal",
                     }}
                   >
                     {char}
@@ -274,7 +296,9 @@ export default function LandingPage({ onEnterApp }) {
                   <div className="text-4xl sm:text-5xl font-black gradient-text mb-2">
                     <AnimatedCounter value={stats.totalGames} suffix="+" />
                   </div>
-                  <p className="text-lg text-slate-300 font-medium">Total Games</p>
+                  <p className="text-lg text-slate-300 font-medium">
+                    Total Games
+                  </p>
                 </div>
               </motion.div>
 
@@ -293,7 +317,9 @@ export default function LandingPage({ onEnterApp }) {
                   <div className="text-4xl sm:text-5xl font-black gradient-text mb-2">
                     <AnimatedCounter value={stats.totalPlayers} />
                   </div>
-                  <p className="text-lg text-slate-300 font-medium">Registered Players</p>
+                  <p className="text-lg text-slate-300 font-medium">
+                    Registered Players
+                  </p>
                 </div>
               </motion.div>
 
@@ -312,7 +338,9 @@ export default function LandingPage({ onEnterApp }) {
                   <div className="text-4xl sm:text-5xl font-black gradient-text mb-2">
                     <AnimatedCounter value={stats.HeroesPlayed} />
                   </div>
-                  <p className="text-lg text-slate-300 font-medium">Heroes Played</p>
+                  <p className="text-lg text-slate-300 font-medium">
+                    Heroes Played
+                  </p>
                 </div>
               </motion.div>
             </div>
@@ -353,7 +381,6 @@ export default function LandingPage({ onEnterApp }) {
       </section>
 
       {/* Live Stats Section - Background Image 3 */}
-      
 
       {/* Disclaimer Message - Scroll-based Word Animation - Background Image 4 */}
       <DisclaimerSection backgroundImage={backgroundImages[3]} />
@@ -381,7 +408,7 @@ export default function LandingPage({ onEnterApp }) {
                 viewport={{ once: true }}
                 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white inline-block"
               >
-                {"Top Players Leaderboard".split("").map((char, index) => (
+                {"Players Leaderboard".split("").map((char, index) => (
                   <motion.span
                     key={index}
                     initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
@@ -390,11 +417,11 @@ export default function LandingPage({ onEnterApp }) {
                     transition={{
                       duration: 0.4,
                       delay: index * 0.03,
-                      ease: [0.22, 1, 0.36, 1]
+                      ease: [0.22, 1, 0.36, 1],
                     }}
                     style={{
                       display: "inline-block",
-                      whiteSpace: char === " " ? "pre" : "normal"
+                      whiteSpace: char === " " ? "pre" : "normal",
                     }}
                   >
                     {char}
@@ -406,13 +433,19 @@ export default function LandingPage({ onEnterApp }) {
                 initial={{ width: 0, opacity: 0 }}
                 whileInView={{ width: "800px", opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 1, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 1,
+                  delay: 0.8,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className="h-1 bg-linear-to-r from-yellow-500 via-orange-500 to-red-500 mx-auto mt-6 rounded-full"
               />
             </div>
 
             {loading ? (
-              <div className="text-center text-slate-400">Loading players...</div>
+              <div className="text-center text-slate-400">
+                Loading players...
+              </div>
             ) : players.length === 0 ? (
               <div className="text-center text-slate-400 text-lg">
                 Be the first to join our community!
@@ -433,7 +466,10 @@ export default function LandingPage({ onEnterApp }) {
                   };
 
                   const isFlipped = flippedCards[player.name];
-                  const playerImageFilename = player.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_');
+                  const playerImageFilename = player.name
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s]/g, "")
+                    .replace(/\s+/g, "_");
                   const playerImage = `/player_images/${playerImageFilename}.jpg`;
 
                   return (
@@ -444,21 +480,21 @@ export default function LandingPage({ onEnterApp }) {
                         y: 50,
                         scale: 0.9,
                         rotateX: 10,
-                        filter: "blur(10px)"
+                        filter: "blur(10px)",
                       }}
                       whileInView={{
                         opacity: 1,
                         y: 0,
                         scale: 1,
                         rotateX: 0,
-                        filter: "blur(0px)"
+                        filter: "blur(0px)",
                       }}
                       viewport={{ once: true, margin: "-50px" }}
                       transition={{
                         duration: 0.8,
                         delay: index * 0.1,
                         ease: [0.22, 1, 0.36, 1],
-                        filter: { duration: 0.6 }
+                        filter: { duration: 0.6 },
                       }}
                       onMouseEnter={() => handleCardHover(player.name, true)}
                       onMouseLeave={() => handleCardHover(player.name, false)}
@@ -468,7 +504,7 @@ export default function LandingPage({ onEnterApp }) {
                       }}
                       className="cursor-pointer"
                       style={{
-                        perspective: "1500px"
+                        perspective: "1500px",
                       }}
                     >
                       <motion.div
@@ -480,12 +516,12 @@ export default function LandingPage({ onEnterApp }) {
                             : "hover:shadow-xl hover:shadow-cyan-500/10"
                         }`}
                         style={{
-                          transformStyle: "preserve-3d"
+                          transformStyle: "preserve-3d",
                         }}
                       >
                         {/* FRONT OF CARD */}
                         <div
-                          className={`absolute inset-0 w-full h-full bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border ${
+                          className={`absolute inset-0 w-full h-full bg-slate-800/80 backdrop-blur-xl rounded-2xl p-4 border ${
                             isTopThree
                               ? "border-yellow-500/30"
                               : "border-slate-700/50"
@@ -494,161 +530,195 @@ export default function LandingPage({ onEnterApp }) {
                             backfaceVisibility: "hidden",
                             WebkitBackfaceVisibility: "hidden",
                             backdropFilter: "blur(20px)",
-                            WebkitBackdropFilter: "blur(20px)"
+                            WebkitBackdropFilter: "blur(20px)",
                           }}
                         >
-                      {/* Animated shimmer for top 3 */}
-                      {isTopThree && (
-                        <motion.div
-                          className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent"
-                          initial={{ x: "-100%" }}
-                          animate={{ x: "200%" }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            repeatDelay: 3,
-                            ease: "linear"
-                          }}
-                        />
-                      )}
+                          {/* Animated shimmer for top 3 */}
+                          {isTopThree && (
+                            <motion.div
+                              className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent"
+                              initial={{ x: "-100%" }}
+                              animate={{ x: "200%" }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                repeatDelay: 3,
+                                ease: "linear",
+                              }}
+                            />
+                          )}
 
-                      {/* Rank Badge with Animation */}
-                      <div className="absolute -top-3 -left-3 flex items-center gap-2 z-10">
-                        <motion.div
-                          initial={{ scale: 0, rotate: -180 }}
-                          whileInView={{ scale: 1, rotate: 0 }}
-                          viewport={{ once: true }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 260,
-                            damping: 20,
-                            delay: index * 0.1 + 0.3
-                          }}
-                          whileHover={{
-                            scale: 1.2,
-                            rotate: 360,
-                            transition: { duration: 0.6 }
-                          }}
-                          className={`w-12 h-12 rounded-full flex items-center justify-center border-2 font-bold text-white shadow-lg ${
-                            isTopThree
-                              ? `bg-linear-to-br ${medalColors[index]} border-yellow-500/60 ${glowColors[index]}`
-                              : "bg-slate-900 border-slate-700"
-                          }`}
-                        >
-                          #{index + 1}
-                        </motion.div>
-                        {isTopThree && (
+                          {/* Rank Badge with Animation */}
+                          <div className="absolute -top-3 -left-3 flex items-center gap-2 z-10">
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              whileInView={{ scale: 1, rotate: 0 }}
+                              viewport={{ once: true }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 260,
+                                damping: 20,
+                                delay: index * 0.1 + 0.3,
+                              }}
+                              whileHover={{
+                                scale: 1.2,
+                                rotate: 360,
+                                transition: { duration: 0.6 },
+                              }}
+                              className={`w-12 h-12 rounded-full flex items-center justify-center border-2 font-bold text-white shadow-lg ${
+                                isTopThree
+                                  ? `bg-linear-to-br ${medalColors[index]} border-yellow-500/60 ${glowColors[index]}`
+                                  : "bg-slate-900 border-slate-700"
+                              }`}
+                            >
+                              #{index + 1}
+                            </motion.div>
+                            {isTopThree && (
+                              <motion.div
+                                initial={{ scale: 0, rotate: -90, opacity: 0 }}
+                                whileInView={{
+                                  scale: 1,
+                                  rotate: 0,
+                                  opacity: 1,
+                                }}
+                                viewport={{ once: true }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 200,
+                                  damping: 15,
+                                  delay: index * 0.1 + 0.5,
+                                }}
+                              >
+                                <motion.div
+                                  animate={{
+                                    y: [0, -5, 0],
+                                    rotate: [0, 10, 0, -10, 0],
+                                  }}
+                                  transition={{
+                                    y: {
+                                      duration: 2,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                    },
+                                    rotate: {
+                                      duration: 3,
+                                      repeat: Infinity,
+                                      ease: "easeInOut",
+                                    },
+                                  }}
+                                >
+                                  <Award
+                                    size={28}
+                                    className={`bg-linear-to-br ${medalColors[index]} text-white drop-shadow-lg`}
+                                    style={{
+                                      filter: `drop-shadow(0 0 10px ${
+                                        index === 0
+                                          ? "#facc15"
+                                          : index === 1
+                                          ? "#9ca3af"
+                                          : "#f97316"
+                                      })`,
+                                    }}
+                                  />
+                                </motion.div>
+                              </motion.div>
+                            )}
+                          </div>
+
+                          {/* Player Info */}
                           <motion.div
-                            initial={{ scale: 0, rotate: -90, opacity: 0 }}
-                            whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
+                            className="flex items-center gap-4 mt-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             transition={{
-                              type: "spring",
-                              stiffness: 200,
-                              damping: 15,
-                              delay: index * 0.1 + 0.5
+                              delay: index * 0.1 + 0.4,
+                              duration: 0.5,
                             }}
                           >
-                            <motion.div
-                              animate={{
-                                y: [0, -5, 0],
-                                rotate: [0, 10, 0, -10, 0]
-                              }}
-                              transition={{
-                                y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                                rotate: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-                              }}
-                            >
-                              <Award
-                                size={28}
-                                className={`bg-linear-to-br ${medalColors[index]} text-white drop-shadow-lg`}
-                                style={{
-                                  filter: `drop-shadow(0 0 10px ${index === 0 ? '#facc15' : index === 1 ? '#9ca3af' : '#f97316'})`
+                            {player.avatar && (
+                              <motion.img
+                                src={player.avatar}
+                                alt={player.name}
+                                className={`w-16 h-16 rounded-full border-2 ${
+                                  isTopThree
+                                    ? "border-yellow-500/60"
+                                    : "border-slate-700"
+                                }`}
+                                whileHover={{
+                                  scale: 1.1,
+                                  rotate: 5,
+                                  transition: {
+                                    type: "spring",
+                                    stiffness: 400,
+                                  },
                                 }}
                               />
-                            </motion.div>
-                          </motion.div>
-                        )}
-                      </div>
-
-                      {/* Player Info */}
-                      <motion.div
-                        className="flex items-center gap-4 mt-6"
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: index * 0.1 + 0.4, duration: 0.5 }}
-                      >
-                        {player.avatar && (
-                          <motion.img
-                            src={player.avatar}
-                            alt={player.name}
-                            className={`w-16 h-16 rounded-full border-2 ${
-                              isTopThree ? "border-yellow-500/60" : "border-slate-700"
-                            }`}
-                            whileHover={{
-                              scale: 1.1,
-                              rotate: 5,
-                              transition: { type: "spring", stiffness: 400 }
-                            }}
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <motion.h3
-                            className="text-base font-bold text-white truncate"
-                            initial={{ opacity: 0 }}
-                            whileInView={{ opacity: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 + 0.5 }}
-                          >
-                            {player.name}
-                          </motion.h3>
-                          <motion.div
-                            className="text-xs text-yellow-400 font-medium mb-1"
-                            initial={{ opacity: 0 }}
-                            whileInView={{ opacity: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 + 0.55 }}
-                          >
-                            {getRankName(player.rank)}
-                          </motion.div>
-                          <motion.div
-                            className="flex items-center gap-2 text-xs flex-wrap"
-                            initial={{ opacity: 0 }}
-                            whileInView={{ opacity: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 + 0.6 }}
-                          >
-                            <span className="text-cyan-400 font-semibold">
-                              {player.mmr} MMR
-                            </span>
-                            <span className="text-slate-600">•</span>
-                            <span className="text-green-400 font-semibold">
-                              {(Number(player?.winRate) || 0).toFixed(1)}% WR
-                            </span>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <motion.h3
+                                className="text-base font-bold text-white truncate"
+                                initial={{ opacity: 0 }}
+                                whileInView={{ opacity: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 + 0.5 }}
+                              >
+                                {player.name}
+                              </motion.h3>
+                              <motion.div
+                                className="text-xs text-yellow-400 font-medium mb-1"
+                                initial={{ opacity: 0 }}
+                                whileInView={{ opacity: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 + 0.55 }}
+                              >
+                                {getRankName(player.rank)}
+                              </motion.div>
+                              <motion.div
+                                className="flex items-center gap-2 text-xs flex-wrap"
+                                initial={{ opacity: 0 }}
+                                whileInView={{ opacity: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 + 0.6 }}
+                              >
+                                <span className="text-cyan-400 font-semibold">
+                                  {player.mmr} MMR
+                                </span>
+                                <span className="text-slate-600">•</span>
+                                <span className="text-green-400 font-semibold">
+                                  {(Number(player?.winRate) || 0).toFixed(1)}%
+                                  WR
+                                </span>
+                              </motion.div>
+                              <motion.div
+                                className="flex items-center gap-2 text-xs mt-0.5"
+                                initial={{ opacity: 0 }}
+                                whileInView={{ opacity: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 + 0.65 }}
+                              >
+                                <span className="text-slate-400">
+                                  {player.totalGames || 0} games
+                                </span>
+                                <span className="text-slate-600">•</span>
+                                <span className="text-green-400">
+                                  {player.wins || 0}W
+                                </span>
+                                <span className="text-slate-600">/</span>
+                                <span className="text-red-400">
+                                  {player.losses || 0}L
+                                </span>
+                              </motion.div>
+                            </div>
                           </motion.div>
                           <motion.div
-                            className="flex items-center gap-2 text-xs mt-0.5"
-                            initial={{ opacity: 0 }}
-                            whileInView={{ opacity: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 + 0.65 }}
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="text-[10px] text-slate-500"
                           >
-                            <span className="text-slate-400">
-                              {player.totalGames || 0} games
-                            </span>
-                            <span className="text-slate-600">•</span>
-                            <span className="text-green-400">
-                              {player.wins || 0}W
-                            </span>
-                            <span className="text-slate-600">/</span>
-                            <span className="text-red-400">
-                              {player.losses || 0}L
-                            </span>
+                            Click to Open statistic
                           </motion.div>
                         </div>
-                      </motion.div>
-                      </div>
 
                         {/* BACK OF CARD */}
                         <div
@@ -662,7 +732,7 @@ export default function LandingPage({ onEnterApp }) {
                             WebkitBackfaceVisibility: "hidden",
                             transform: "rotateY(180deg)",
                             backdropFilter: "blur(20px)",
-                            WebkitBackdropFilter: "blur(20px)"
+                            WebkitBackdropFilter: "blur(20px)",
                           }}
                         >
                           {/* Player Photo - Left Side */}
@@ -672,16 +742,20 @@ export default function LandingPage({ onEnterApp }) {
                               alt={player.name}
                               className="w-full h-full object-cover relative z-10"
                               onError={(e) => {
-                                e.target.style.display = 'none';
-                                const fallback = e.target.parentElement.querySelector('.fallback-gradient');
-                                if (fallback) fallback.style.display = 'flex';
+                                e.target.style.display = "none";
+                                const fallback =
+                                  e.target.parentElement.querySelector(
+                                    ".fallback-gradient"
+                                  );
+                                if (fallback) fallback.style.display = "flex";
                               }}
                             />
                             {/* Fallback gradient */}
-                            <div
-                              className="fallback-gradient absolute inset-0 bg-linear-to-br from-purple-600 to-pink-600 hidden items-center justify-center z-0"
-                            >
-                              <Gamepad size={36} className="text-white opacity-50" />
+                            <div className="fallback-gradient absolute inset-0 bg-linear-to-br from-purple-600 to-pink-600 hidden items-center justify-center z-0">
+                              <Gamepad
+                                size={36}
+                                className="text-white opacity-50"
+                              />
                             </div>
                             {/* Gradient overlay */}
                             <div className="absolute inset-0 bg-linear-to-t from-slate-900/40 via-transparent to-transparent pointer-events-none z-20" />
@@ -690,19 +764,14 @@ export default function LandingPage({ onEnterApp }) {
                           {/* Funny Quote - Right Side */}
                           <div className="flex-1 flex flex-col justify-center">
                             <p className="text-sm font-bold text-white mb-1 leading-tight">
-                              "{funnyQuotes[player.name]?.quote || "Legend in the making! 🌟"}"
+                              "
+                              {funnyQuotes[player.name]?.quote ||
+                                "Legend in the making! 🌟"}
+                              "
                             </p>
                             <p className="text-xs text-slate-400 italic mb-2">
                               - {funnyQuotes[player.name]?.name || player.name}
                             </p>
-                            {/* Click hint */}
-                            <motion.div
-                              animate={{ scale: [1, 1.05, 1] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                              className="text-[10px] text-slate-500"
-                            >
-                              Click to flip back
-                            </motion.div>
                           </div>
                         </div>
                       </motion.div>
@@ -747,11 +816,11 @@ export default function LandingPage({ onEnterApp }) {
                     transition={{
                       duration: 0.4,
                       delay: index * 0.03,
-                      ease: [0.22, 1, 0.36, 1]
+                      ease: [0.22, 1, 0.36, 1],
                     }}
                     style={{
                       display: "inline-block",
-                      whiteSpace: char === " " ? "pre" : "normal"
+                      whiteSpace: char === " " ? "pre" : "normal",
                     }}
                   >
                     {char}
@@ -763,7 +832,11 @@ export default function LandingPage({ onEnterApp }) {
                 initial={{ width: 0, opacity: 0 }}
                 whileInView={{ width: "560px", opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 1,
+                  delay: 0.6,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className="h-1 bg-linear-to-r from-purple-500 via-pink-500 to-red-500 mx-auto mt-6 rounded-full"
               />
             </div>
@@ -782,20 +855,20 @@ export default function LandingPage({ onEnterApp }) {
                       scale: 0.8,
                       y: 30,
                       rotateX: -15,
-                      filter: "blur(10px)"
+                      filter: "blur(10px)",
                     }}
                     whileInView={{
                       opacity: 1,
                       scale: 1,
                       y: 0,
                       rotateX: 0,
-                      filter: "blur(0px)"
+                      filter: "blur(0px)",
                     }}
                     viewport={{ once: true, margin: "-50px" }}
                     transition={{
                       duration: 0.7,
                       delay: index * 0.08,
-                      ease: [0.22, 1, 0.36, 1]
+                      ease: [0.22, 1, 0.36, 1],
                     }}
                     whileHover={{
                       scale: 1.08,
@@ -804,17 +877,18 @@ export default function LandingPage({ onEnterApp }) {
                       transition: {
                         type: "spring",
                         stiffness: 400,
-                        damping: 25
-                      }
+                        damping: 25,
+                      },
                     }}
                     className="bg-slate-800/40 backdrop-blur-md rounded-xl p-5 border border-slate-700/50 hover:border-purple-500/70 hover:shadow-2xl hover:shadow-purple-500/20 transition-all cursor-pointer relative overflow-hidden group"
                     style={{
                       perspective: "1000px",
-                      transformStyle: "preserve-3d"
+                      transformStyle: "preserve-3d",
                     }}
                   >
                     {/* Animated shimmer on hover */}
-                    <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 -translate-x-full group-hover:translate-x-full transform"
+                    <div
+                      className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 -translate-x-full group-hover:translate-x-full transform"
                       style={{ transition: "transform 0.8s ease-in-out" }}
                     />
 
@@ -832,10 +906,13 @@ export default function LandingPage({ onEnterApp }) {
                           initial={{ scale: 1.2, opacity: 0 }}
                           whileInView={{ scale: 1, opacity: 1 }}
                           viewport={{ once: true }}
-                          transition={{ duration: 0.6, delay: index * 0.08 + 0.2 }}
+                          transition={{
+                            duration: 0.6,
+                            delay: index * 0.08 + 0.2,
+                          }}
                           onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextElementSibling.style.display = 'flex';
+                            e.target.style.display = "none";
+                            e.target.nextElementSibling.style.display = "flex";
                           }}
                         />
                       ) : null}
@@ -845,12 +922,15 @@ export default function LandingPage({ onEnterApp }) {
                         initial={{ scale: 0, rotate: -180 }}
                         whileInView={{ scale: 1, rotate: 0 }}
                         viewport={{ once: true }}
-                        transition={{ type: "spring", delay: index * 0.08 + 0.2 }}
+                        transition={{
+                          type: "spring",
+                          delay: index * 0.08 + 0.2,
+                        }}
                         style={{
                           background: `linear-gradient(135deg, ${getHeroColor(
                             hero.hero_name
                           )})`,
-                          display: hero.avatar ? 'none' : 'flex',
+                          display: hero.avatar ? "none" : "flex",
                         }}
                       >
                         {hero.displayName.charAt(0)}
@@ -864,12 +944,14 @@ export default function LandingPage({ onEnterApp }) {
                         transition={{
                           type: "spring",
                           stiffness: 200,
-                          delay: index * 0.08 + 0.4
+                          delay: index * 0.08 + 0.4,
                         }}
                         className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1"
                       >
                         <TrendingUp size={10} className="text-purple-400" />
-                        <span className="text-xs text-white font-bold">{hero.times_picked}</span>
+                        <span className="text-xs text-white font-bold">
+                          {hero.times_picked}
+                        </span>
                       </motion.div>
                     </motion.div>
 
@@ -895,11 +977,21 @@ export default function LandingPage({ onEnterApp }) {
                       <div className="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden mb-2 shadow-inner">
                         <motion.div
                           initial={{ width: 0, opacity: 0 }}
-                          whileInView={{ width: `${hero.win_rate}%`, opacity: 1 }}
+                          whileInView={{
+                            width: `${hero.win_rate}%`,
+                            opacity: 1,
+                          }}
                           viewport={{ once: true }}
                           transition={{
-                            width: { duration: 1.2, delay: index * 0.08 + 0.5, ease: [0.22, 1, 0.36, 1] },
-                            opacity: { duration: 0.3, delay: index * 0.08 + 0.5 }
+                            width: {
+                              duration: 1.2,
+                              delay: index * 0.08 + 0.5,
+                              ease: [0.22, 1, 0.36, 1],
+                            },
+                            opacity: {
+                              duration: 0.3,
+                              delay: index * 0.08 + 0.5,
+                            },
                           }}
                           className="h-full bg-linear-to-r from-green-500 via-emerald-500 to-green-400 shadow-lg shadow-green-500/50 relative"
                         >
@@ -910,7 +1002,7 @@ export default function LandingPage({ onEnterApp }) {
                               duration: 2,
                               repeat: Infinity,
                               repeatDelay: 1,
-                              ease: "linear"
+                              ease: "linear",
                             }}
                           />
                         </motion.div>
@@ -953,18 +1045,18 @@ export default function LandingPage({ onEnterApp }) {
           transition={{ duration: 0.8 }}
           className="relative z-10 text-center"
         >
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-8">
-              Ready to Join noob?
-            </h2>
-            <motion.button
-              onClick={onEnterApp}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-12 py-6 bg-linear-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-2xl shadow-2xl hover:shadow-purple-500/50 transition-all"
-            >
-              Enter Toxic Community
-            </motion.button>
-          </motion.div>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-8">
+            Ready to Join noob?
+          </h2>
+          <motion.button
+            onClick={onEnterApp}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-12 py-6 bg-linear-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-2xl shadow-2xl hover:shadow-purple-500/50 transition-all"
+          >
+            Enter Toxic Community
+          </motion.button>
+        </motion.div>
       </section>
 
       {/* Player Statistics Modal */}
@@ -1016,63 +1108,208 @@ function DisclaimerSection({ backgroundImage }) {
   const animationSpeed = 0.6;
   const numWords = words.length;
 
-  const word0 = useWordAnimation(scrollYProgress, randomPositions[0], 0, numWords, animationSpeed);
-  const word1 = useWordAnimation(scrollYProgress, randomPositions[1], 1, numWords, animationSpeed);
-  const word2 = useWordAnimation(scrollYProgress, randomPositions[2], 2, numWords, animationSpeed);
-  const word3 = useWordAnimation(scrollYProgress, randomPositions[3], 3, numWords, animationSpeed);
-  const word4 = useWordAnimation(scrollYProgress, randomPositions[4], 4, numWords, animationSpeed);
-  const word5 = useWordAnimation(scrollYProgress, randomPositions[5], 5, numWords, animationSpeed);
-  const word6 = useWordAnimation(scrollYProgress, randomPositions[6], 6, numWords, animationSpeed);
-  const word7 = useWordAnimation(scrollYProgress, randomPositions[7], 7, numWords, animationSpeed);
+  const word0 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[0],
+    0,
+    numWords,
+    animationSpeed
+  );
+  const word1 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[1],
+    1,
+    numWords,
+    animationSpeed
+  );
+  const word2 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[2],
+    2,
+    numWords,
+    animationSpeed
+  );
+  const word3 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[3],
+    3,
+    numWords,
+    animationSpeed
+  );
+  const word4 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[4],
+    4,
+    numWords,
+    animationSpeed
+  );
+  const word5 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[5],
+    5,
+    numWords,
+    animationSpeed
+  );
+  const word6 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[6],
+    6,
+    numWords,
+    animationSpeed
+  );
+  const word7 = useWordAnimation(
+    scrollYProgress,
+    randomPositions[7],
+    7,
+    numWords,
+    animationSpeed
+  );
 
-  const wordAnimations = [word0, word1, word2, word3, word4, word5, word6, word7];
+  const wordAnimations = [
+    word0,
+    word1,
+    word2,
+    word3,
+    word4,
+    word5,
+    word6,
+    word7,
+  ];
 
   // Sand wind effect - words fade and scatter away after forming sentence
   const windOpacity = useTransform(scrollYProgress, [0.6, 0.8, 1], [1, 1, 0]);
   const windScatter = useTransform(scrollYProgress, [0.6, 1], [0, 1]);
 
   // Create wind scatter transforms for each word individually (hooks can't be in loops)
-  const wind0X = useTransform(windScatter, [0, 1], [0, randomPositions[0].x * 2]);
-  const wind0Y = useTransform(windScatter, [0, 1], [0, randomPositions[0].y * 2]);
+  const wind0X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[0].x * 2]
+  );
+  const wind0Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[0].y * 2]
+  );
   const wind0Rot = useTransform(windScatter, [0, 1], [0, randomRotations[0]]);
 
-  const wind1X = useTransform(windScatter, [0, 1], [0, randomPositions[1].x * 2]);
-  const wind1Y = useTransform(windScatter, [0, 1], [0, randomPositions[1].y * 2]);
+  const wind1X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[1].x * 2]
+  );
+  const wind1Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[1].y * 2]
+  );
   const wind1Rot = useTransform(windScatter, [0, 1], [0, randomRotations[1]]);
 
-  const wind2X = useTransform(windScatter, [0, 1], [0, randomPositions[2].x * 2]);
-  const wind2Y = useTransform(windScatter, [0, 1], [0, randomPositions[2].y * 2]);
+  const wind2X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[2].x * 2]
+  );
+  const wind2Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[2].y * 2]
+  );
   const wind2Rot = useTransform(windScatter, [0, 1], [0, randomRotations[2]]);
 
-  const wind3X = useTransform(windScatter, [0, 1], [0, randomPositions[3].x * 2]);
-  const wind3Y = useTransform(windScatter, [0, 1], [0, randomPositions[3].y * 2]);
+  const wind3X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[3].x * 2]
+  );
+  const wind3Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[3].y * 2]
+  );
   const wind3Rot = useTransform(windScatter, [0, 1], [0, randomRotations[3]]);
 
-  const wind4X = useTransform(windScatter, [0, 1], [0, randomPositions[4].x * 2]);
-  const wind4Y = useTransform(windScatter, [0, 1], [0, randomPositions[4].y * 2]);
+  const wind4X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[4].x * 2]
+  );
+  const wind4Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[4].y * 2]
+  );
   const wind4Rot = useTransform(windScatter, [0, 1], [0, randomRotations[4]]);
 
-  const wind5X = useTransform(windScatter, [0, 1], [0, randomPositions[5].x * 2]);
-  const wind5Y = useTransform(windScatter, [0, 1], [0, randomPositions[5].y * 2]);
+  const wind5X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[5].x * 2]
+  );
+  const wind5Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[5].y * 2]
+  );
   const wind5Rot = useTransform(windScatter, [0, 1], [0, randomRotations[5]]);
 
-  const wind6X = useTransform(windScatter, [0, 1], [0, randomPositions[6].x * 2]);
-  const wind6Y = useTransform(windScatter, [0, 1], [0, randomPositions[6].y * 2]);
+  const wind6X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[6].x * 2]
+  );
+  const wind6Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[6].y * 2]
+  );
   const wind6Rot = useTransform(windScatter, [0, 1], [0, randomRotations[6]]);
 
-  const wind7X = useTransform(windScatter, [0, 1], [0, randomPositions[7].x * 2]);
-  const wind7Y = useTransform(windScatter, [0, 1], [0, randomPositions[7].y * 2]);
+  const wind7X = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[7].x * 2]
+  );
+  const wind7Y = useTransform(
+    windScatter,
+    [0, 1],
+    [0, randomPositions[7].y * 2]
+  );
   const wind7Rot = useTransform(windScatter, [0, 1], [0, randomRotations[7]]);
 
   // Create combined opacity transforms (word fade-in * wind fade-out)
-  const combinedOpacity0 = useTransform([word0.opacity, windOpacity], ([base, wind]) => base * wind);
-  const combinedOpacity1 = useTransform([word1.opacity, windOpacity], ([base, wind]) => base * wind);
-  const combinedOpacity2 = useTransform([word2.opacity, windOpacity], ([base, wind]) => base * wind);
-  const combinedOpacity3 = useTransform([word3.opacity, windOpacity], ([base, wind]) => base * wind);
-  const combinedOpacity4 = useTransform([word4.opacity, windOpacity], ([base, wind]) => base * wind);
-  const combinedOpacity5 = useTransform([word5.opacity, windOpacity], ([base, wind]) => base * wind);
-  const combinedOpacity6 = useTransform([word6.opacity, windOpacity], ([base, wind]) => base * wind);
-  const combinedOpacity7 = useTransform([word7.opacity, windOpacity], ([base, wind]) => base * wind);
+  const combinedOpacity0 = useTransform(
+    [word0.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
+  const combinedOpacity1 = useTransform(
+    [word1.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
+  const combinedOpacity2 = useTransform(
+    [word2.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
+  const combinedOpacity3 = useTransform(
+    [word3.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
+  const combinedOpacity4 = useTransform(
+    [word4.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
+  const combinedOpacity5 = useTransform(
+    [word5.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
+  const combinedOpacity6 = useTransform(
+    [word6.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
+  const combinedOpacity7 = useTransform(
+    [word7.opacity, windOpacity],
+    ([base, wind]) => base * wind
+  );
 
   const windTransforms = [
     { x: wind0X, y: wind0Y, rotation: wind0Rot, opacity: combinedOpacity0 },
@@ -1082,7 +1319,7 @@ function DisclaimerSection({ backgroundImage }) {
     { x: wind4X, y: wind4Y, rotation: wind4Rot, opacity: combinedOpacity4 },
     { x: wind5X, y: wind5Y, rotation: wind5Rot, opacity: combinedOpacity5 },
     { x: wind6X, y: wind6Y, rotation: wind6Rot, opacity: combinedOpacity6 },
-    { x: wind7X, y: wind7Y, rotation: wind7Rot, opacity: combinedOpacity7 }
+    { x: wind7X, y: wind7Y, rotation: wind7Rot, opacity: combinedOpacity7 },
   ];
 
   return (
@@ -1092,7 +1329,7 @@ function DisclaimerSection({ backgroundImage }) {
         className="absolute inset-0 bg-cover bg-center bg-fixed"
         style={{
           backgroundImage: `url(${backgroundImage})`,
-          opacity: useTransform(scrollYProgress, [0, 0.5, 0.7], [1, 1, 0])
+          opacity: useTransform(scrollYProgress, [0, 0.5, 0.7], [1, 1, 0]),
         }}
       />
       {/* Second background - fades in as you scroll */}
@@ -1100,14 +1337,14 @@ function DisclaimerSection({ backgroundImage }) {
         className="absolute inset-0 bg-cover bg-center bg-fixed"
         style={{
           backgroundImage: `url(/backgrounds/bgimage8.jpg)`,
-          opacity: useTransform(scrollYProgress, [0.5, 0.7, 1], [0, 1, 1])
+          opacity: useTransform(scrollYProgress, [0.5, 0.7, 1], [0, 1, 1]),
         }}
       />
       {/* Dark overlay - gets darker as you scroll */}
       <motion.div
         className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/50 to-slate-950/70"
         style={{
-          opacity: useTransform(scrollYProgress, [0, 0.3, 0.5], [0.7, 0.9, 1])
+          opacity: useTransform(scrollYProgress, [0, 0.3, 0.5], [0.7, 0.9, 1]),
         }}
       />
 
@@ -1136,7 +1373,7 @@ function DisclaimerSection({ backgroundImage }) {
                     rotate: wind.rotation,
                     display: "inline-block",
                     position: "relative",
-                    fontFamily: "'Roboto', sans-serif"
+                    fontFamily: "'Roboto', sans-serif",
                   }}
                   className="text-4xl sm:text-5xl lg:text-6xl text-white"
                 >
@@ -1155,7 +1392,13 @@ function DisclaimerSection({ backgroundImage }) {
 /**
  * Custom hook for creating word animations (must be called at component top level)
  */
-function useWordAnimation(scrollYProgress, randomPos, index, totalWords, animationSpeed) {
+function useWordAnimation(
+  scrollYProgress,
+  randomPos,
+  index,
+  totalWords,
+  animationSpeed
+) {
   const wordStart = index / totalWords;
   const wordEnd = (index + 1) / totalWords;
 

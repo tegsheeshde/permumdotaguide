@@ -18,6 +18,7 @@ const playerNameMapping = {
   "humbledog": "humbledog",
   "xaky": "xaky",
   "Woody": "Woody",
+  "MiRaGS": "MIRAGS",
   // Add more mappings as needed
 };
 
